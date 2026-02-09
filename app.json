@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "BiRandevu",
-    "slug": "BiRandevu",
+    "slug": "bi-randevu",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -24,6 +24,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "4c53cca6-df7c-4047-9ec3-cbf4baaf984c"
+      }
+    },
+    "owner": "bi-randevu"
   }
 }
