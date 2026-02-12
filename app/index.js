@@ -1,10 +1,25 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { router } from "expo-router";
+import { openModal, ModalTypeEnum } from "../components/high-level/modal-renderer";
 
 export default function Index() {
+  const openExampleModal = () => {
+    openModal(ModalTypeEnum.ConfirmModal, {
+      title: "Modal örneği",
+      message: "Bu onay kutusu modal renderer ile açıldı. Tamam veya İptal ile kapatabilirsin.",
+      confirmText: "Tamam",
+      cancelText: "İptal",
+      onConfirm: () => console.log("Tamam seçildi"),
+      onCancel: () => console.log("İptal seçildi"),
+    });
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>BiRandevu</Text>
+      <Pressable style={styles.buttonOutlined} onPress={openExampleModal}>
+        <Text style={styles.buttonOutlinedText}>Modal örneği aç</Text>
+      </Pressable>
       <Pressable
         style={styles.button}
         onPress={() => router.push("/auth/login")}
