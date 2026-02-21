@@ -112,6 +112,7 @@ const CustomText = ({
   if (medium) fontFamily = "Urbanist_500Medium"; //500
   if (semibold) fontFamily = "Urbanist_600SemiBold"; //600
   if (bold) fontFamily = "Urbanist_700Bold"; //700
+  if (extraBold) fontFamily = "Urbanist_800ExtraBold"; //800
 
   if (interRegular) fontFamily = "Inter_400Regular";
   if (interMedium) fontFamily = "Inter_500Medium";

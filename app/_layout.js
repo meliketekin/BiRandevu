@@ -3,13 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { ModalRenderer } from "../components/high-level/modal-renderer";
-import {
-  Urbanist_300Light,
-  Urbanist_400Regular,
-  Urbanist_500Medium,
-  Urbanist_600SemiBold,
-  Urbanist_700Bold,
-} from "@expo-google-fonts/urbanist";
+import { Urbanist_300Light, Urbanist_400Regular, Urbanist_500Medium, Urbanist_600SemiBold, Urbanist_700Bold, Urbanist_800ExtraBold } from "@expo-google-fonts/urbanist";
 import { useFonts } from "expo-font";
 
 export default function RootLayout() {
@@ -19,6 +13,7 @@ export default function RootLayout() {
     Urbanist_500Medium,
     Urbanist_600SemiBold,
     Urbanist_700Bold,
+    Urbanist_800ExtraBold,
   });
 
   if (!fontsLoaded) {

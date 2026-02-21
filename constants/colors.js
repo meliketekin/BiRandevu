@@ -16,4 +16,13 @@ export const Colors = {
   InputInner: "#8F959E",
   DisabledColor: "#C4C8CC",
   Black: "#000000",
+  // BiRandevu marka renkleri
+  BrandBackground: "#EAEFFE",
+  BrandPrimary: "#9787F3",
+  BrandDark: "#2D274B",
+  // Input
+  InputBackground: "#ffffff",
+  InputBorderColor: "#e5e5e5",
+  InputPlaceholderColor: "#8F959E",
+  ErrorColor: "#FF3B30",
 };

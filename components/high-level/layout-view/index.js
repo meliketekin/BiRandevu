@@ -4,10 +4,9 @@ import { memo, useMemo } from "react";
 import { Keyboard, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import CustomButton from "../custom-button";
-import CustomSvg from "../custom-svg";
 import CustomText from "../custom-text";
-import { SVGEnum } from "../../../enums/svg-enum";
 
 const LayoutView = ({
   children,
@@ -90,15 +89,7 @@ const LayoutView = ({
             onPress={handleBackPress}
             disabled={leftAction || showBackButton ? false : true}
           >
-            <View style={styles.buttonStyle}>
-              {leftButton
-                ? leftButton
-                : showBackButton && (
-                    <View style={{ borderWidth: 1, borderRadius: 12, borderColor: Colors.BorderColor, width: 41, height: 41, justifyContent: "center", alignItems: "center" }}>
-                      <CustomSvg svgEnum={SVGEnum.Back} size={14} />
-                    </View>
-                  )}
-            </View>
+            <View style={styles.buttonStyle}>{leftButton ? leftButton : showBackButton && <Ionicons name="arrow-back-outline" size={22} color={Colors.BrandDark ?? Colors.TextColor} />}</View>
           </TouchableOpacity>
           <View style={styles.titleContainer}>
             <CustomText style={{ ...titleStyle }} center semibold>
