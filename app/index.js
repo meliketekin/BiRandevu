@@ -16,7 +16,7 @@ export default function Index() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>BiRandevu</Text>
+      <Text style={styles.title}>BuRandevu</Text>
       <Pressable style={styles.buttonOutlined} onPress={openExampleModal}>
         <Text style={styles.buttonOutlinedText}>Modal örneği aç</Text>
       </Pressable>

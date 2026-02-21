@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "BiRandevu",
-    "slug": "bi-randevu",
+    "name": "BuRandevu",
+    "slug": "bu-randevu",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.birandevu.birandevu",
+      "bundleIdentifier": "com.burandevu.burandevu",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -34,6 +34,6 @@
         "projectId": "4c53cca6-df7c-4047-9ec3-cbf4baaf984c"
       }
     },
-    "owner": "bi-randevu"
+    "owner": "bu-randevu"
   }
 }

@@ -7,11 +7,11 @@ import CustomText from "@/components/high-level/custom-text";
 const SECTIONS = [
   {
     title: "1. Kabul ve Kapsam",
-    body: "Bu Kullanım Koşulları (“Koşullar”), BiRandevu mobil uygulaması ve ilgili hizmetleri (“Hizmet”) kullanımınızı yönetir. Uygulamayı indirerek veya kullanmaya devam ederek bu koşulları kabul etmiş sayılırsınız.",
+    body: "Bu Kullanım Koşulları (“Koşullar”), BuRandevu mobil uygulaması ve ilgili hizmetleri (“Hizmet”) kullanımınızı yönetir. Uygulamayı indirerek veya kullanmaya devam ederek bu koşulları kabul etmiş sayılırsınız.",
   },
   {
     title: "2. Hizmetin Tanımı",
-    body: "BiRandevu, kullanıcıların berber, kuaför, nail art vb. işletmelerden randevu almasını sağlayan bir platformdur. Hizmet, işletmeler ve kullanıcılar arasında randevu oluşturma, yönetme ve iptal etme imkânı sunar.",
+    body: "BuRandevu, kullanıcıların berber, kuaför, nail art vb. işletmelerden randevu almasını sağlayan bir platformdur. Hizmet, işletmeler ve kullanıcılar arasında randevu oluşturma, yönetme ve iptal etme imkânı sunar.",
   },
   {
     title: "3. Hesap ve Kayıt",
