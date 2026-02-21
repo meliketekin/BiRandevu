@@ -3,15 +3,15 @@ import { View, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback } from 
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
-import LayoutView from "../../components/high-level/layout-view";
-import CustomText from "../../components/high-level/custom-text";
-import CustomButton from "../../components/high-level/custom-button";
-import CustomImage from "../../components/high-level/custom-image";
-import { Colors } from "../../constants/colors";
-import CustomInput from "../../components/high-level/custom-input";
-import CustomSvg from "../../components/high-level/custom-svg";
-import { SVGEnum } from "../../enums/svg-enum";
-import Validator from "../../infrastructures/validation";
+import LayoutView from "@/components/high-level/layout-view";
+import CustomText from "@/components/high-level/custom-text";
+import CustomButton from "@/components/high-level/custom-button";
+import CustomImage from "@/components/high-level/custom-image";
+import { Colors } from "@/constants/colors";
+import CustomInput from "@/components/high-level/custom-input";
+import CustomSvg from "@/components/high-level/custom-svg";
+import { SVGEnum } from "@/enums/svg-enum";
+import Validator from "@/infrastructures/validation";
 
 export default function Login() {
   const [state, setState] = useState({ email: "", password: "" });
@@ -30,6 +30,10 @@ export default function Login() {
     // TODO: auth API
     router.replace("/customer");
   };
+
+  const togglePasswordVisibility = useCallback(() => {
+    setShowPassword(!showPassword);
+  }, [showPassword]);
 
   return (
     <LayoutView isActiveHeader={false} backgroundColor={Colors.BrandBackground}>
@@ -50,10 +54,10 @@ export default function Login() {
           <View style={styles.container}>
             <CustomImage uri={require("../../assets/logo.png")} isLocalFile style={styles.logo} contentFit="contain" />
             <View style={styles.header}>
-              <CustomText style={styles.welcome} headerxxl bold>
+              <CustomText color={Colors.BrandDark} style={styles.welcome} headerxxl bold>
                 Hoş geldiniz
               </CustomText>
-              <CustomText style={styles.subtitle} md>
+              <CustomText color={Colors.LightGray2} customMarginTop={8} md>
                 Hesabınıza giriş yapın
               </CustomText>
             </View>
@@ -90,32 +94,24 @@ export default function Login() {
                 })}
                 secureTextEntry={!showPassword}
                 style={styles.passwordInput}
-                rightContent={
-                  <Pressable onPress={() => setShowPassword((s) => !s)} hitSlop={12} style={styles.eyeButton}>
-                    <CustomSvg
-                      svgEnum={showPassword ? SVGEnum.EyeOff : SVGEnum.Eye}
-                      size={100}
-                      fill={"red"}
-                      stroke={"red"}
-                    />
-                  </Pressable>
-                }
+                rightIcon={!state?.password ? SVGEnum.EyeOff : showPassword ? SVGEnum.EyeOff : SVGEnum.Eye}
+                onRightIconPress={togglePasswordVisibility}
               />
               <CustomButton title="Giriş yap" onPress={handleLogin} backgroundColor={Colors.BrandPrimary} style={styles.loginButton} marginTop={24} fontColor={Colors.White} />
 
               <Pressable style={styles.forgotPress} onPress={() => {}} hitSlop={8}>
-                <CustomText sm style={{ color: Colors.BrandPrimary }}>
+                <CustomText sm color={Colors.BrandPrimary}>
                   Şifremi unuttum
                 </CustomText>
               </Pressable>
             </View>
 
             <View style={styles.footer}>
-              <CustomText md style={{ color: Colors.BrandDark }}>
+              <CustomText md color={Colors.BrandDark}>
                 Hesabınız yok mu?{" "}
               </CustomText>
               <Pressable onPress={() => router.push("/auth/register")} hitSlop={8}>
-                <CustomText md semibold style={{ color: Colors.BrandPrimary }}>
+                <CustomText md semibold color={Colors.BrandPrimary}>
                   Kayıt ol
                 </CustomText>
               </Pressable>
@@ -146,14 +142,6 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 32,
   },
-  welcome: {
-    color: Colors.BrandDark,
-  },
-  subtitle: {
-    color: Colors.BrandDark,
-    opacity: 0.8,
-    marginTop: 8,
-  },
   card: {
     backgroundColor: Colors.White,
     borderRadius: 20,
@@ -165,24 +153,8 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     elevation: 4,
   },
-  label: {
-    color: Colors.BrandDark,
-    marginBottom: 8,
-  },
-  input: {
-    height: 52,
-    borderWidth: 1,
-    borderColor: Colors.BorderColor,
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    fontSize: 16,
-    color: Colors.BrandDark,
-  },
   passwordInput: {
     marginTop: 20,
-  },
-  eyeButton: {
-    padding: 4,
   },
   loginButton: {
     borderRadius: 12,

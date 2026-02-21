@@ -79,6 +79,8 @@ const LayoutView = ({
     if (onTouchableWithoutOnPress instanceof Function) onTouchableWithoutOnPress();
   };
 
+  const { color: titleColor, ...restTitleStyle } = titleStyle || {};
+
   return (
     <View style={containerStyle}>
       {isActiveHeader && (
@@ -92,7 +94,7 @@ const LayoutView = ({
             <View style={styles.buttonStyle}>{leftButton ? leftButton : showBackButton && <Ionicons name="arrow-back-outline" size={22} color={Colors.BrandDark ?? Colors.TextColor} />}</View>
           </TouchableOpacity>
           <View style={styles.titleContainer}>
-            <CustomText style={{ ...titleStyle }} center semibold>
+            <CustomText color={titleColor} style={restTitleStyle} center semibold>
               {title}
             </CustomText>
           </View>
