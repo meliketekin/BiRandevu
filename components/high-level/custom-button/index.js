@@ -11,7 +11,7 @@ const CustomButton = ({
   backgroundColor,
   marginTop = 10,
   fontColor,
-  height = 56,
+  height = 50,
   style,
   disabled,
   loading,
