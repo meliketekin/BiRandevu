@@ -1,7 +1,7 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
-import { View, StyleSheet } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useEffect } from "react";
 
@@ -47,7 +47,7 @@ export default function CustomerLayout() {
         name="index"
         options={{
           title: "Ana Sayfa",
-          tabBarLabel: "Ana Sayfa",
+          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Ana Sayfa</Text> : null),
           tabBarIcon: (props) => <AnimatedTabIcon name="home" {...props} />,
         }}
       />
@@ -55,7 +55,7 @@ export default function CustomerLayout() {
         name="randevular"
         options={{
           title: "Randevularım",
-          tabBarLabel: "Randevular",
+          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Randevular</Text> : null),
           tabBarIcon: (props) => <AnimatedTabIcon name="calendar" {...props} />,
         }}
       />
@@ -63,7 +63,7 @@ export default function CustomerLayout() {
         name="profil"
         options={{
           title: "Profil",
-          tabBarLabel: "Profil",
+          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Profil</Text> : null),
           tabBarIcon: (props) => <AnimatedTabIcon name="person" {...props} />,
         }}
       />
@@ -89,8 +89,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.White,
   },
   tabBarLabel: {
-    fontSize: 12,
-    fontWeight: "500",
+    fontSize: 11,
+    fontWeight: "600",
   },
   tabBarItem: {
     paddingVertical: 4,
