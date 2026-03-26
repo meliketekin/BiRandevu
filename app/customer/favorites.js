@@ -1,11 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
+import LayoutView from '@/components/high-level/layout-view'
 
 const favorites = () => {
   return (
-    <View>
+    <LayoutView title="Favorilerim">
       <Text>favorites</Text>
-    </View>
+    </LayoutView>
   )
 }
 

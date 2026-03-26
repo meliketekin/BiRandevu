@@ -63,7 +63,7 @@ const LayoutView = ({
     () => ({
       paddingHorizontal: paddingHorizontal ?? 20,
       flex: 1,
-      paddingBottom: paddingBottom ?? deviceInsets.bottom,
+      paddingBottom: paddingBottom ?? 0,
       ...style,
     }),
     [paddingHorizontal, paddingBottom],

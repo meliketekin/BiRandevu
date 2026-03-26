@@ -1,7 +1,9 @@
-import { Tabs } from "expo-router";
+import { router, Tabs, useSegments } from "expo-router";
+import { BottomTabBar } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
-import { View, Text, StyleSheet } from "react-native";
+import { useEffect, useRef } from "react";
+import { Animated, Pressable, Text, StyleSheet, View } from "react-native";
 
 const TAB_ICON_SIZE = 24;
 
@@ -24,10 +26,53 @@ const TAB_ICONS = {
   },
 };
 
+const HIDDEN_TAB_ROUTES = ["business-list", "business-detail", "create-appointment"];
+
+function AnimatedTabBar({ hidden, ...props }) {
+  const translateY = useRef(new Animated.Value(hidden ? 120 : 0)).current;
+
+  useEffect(() => {
+    Animated.timing(translateY, {
+      toValue: hidden ? 120 : 0,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }, [hidden, translateY]);
+
+  return (
+    <Animated.View
+      pointerEvents={hidden ? "none" : "auto"}
+      style={[
+        styles.animatedTabBar,
+        {
+          transform: [{ translateY }],
+        },
+      ]}
+    >
+      <BottomTabBar {...props} />
+    </Animated.View>
+  );
+}
+
+function CenterActionButton() {
+  return (
+    <View style={styles.centerButtonOuter}>
+      <Pressable style={styles.centerButton} onPress={() => router.push("/customer/home/business-list")}>
+        <Ionicons name="add" size={38} color={Colors.White} />
+      </Pressable>
+    </View>
+  );
+}
+
 export default function CustomerLayout() {
+  const segments = useSegments();
+  const currentRoute = segments[segments.length - 1];
+  const shouldHideTabBar = HIDDEN_TAB_ROUTES.includes(currentRoute);
+
   return (
     <Tabs
       initialRouteName="home"
+      tabBar={(props) => <AnimatedTabBar {...props} hidden={shouldHideTabBar} />}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.BrandPrimary,
@@ -35,7 +80,6 @@ export default function CustomerLayout() {
         tabBarStyle: styles.tabBar,
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarItemStyle: styles.tabBarItem,
-        tabBarBackground: () => <View style={styles.tabBarBackground} />,
       }}
     >
       <Tabs.Screen
@@ -52,6 +96,15 @@ export default function CustomerLayout() {
           title: "Randevularım",
           tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Randevularım</Text> : null),
           tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.appointments.active : TAB_ICONS.appointments.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="create-action"
+        options={{
+          title: "",
+          tabBarLabel: () => null,
+          tabBarIcon: () => null,
+          tabBarButton: () => <CenterActionButton />,
         }}
       />
 
@@ -77,21 +130,27 @@ export default function CustomerLayout() {
 }
 
 const styles = StyleSheet.create({
+  animatedTabBar: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 20,
+    overflow: "visible",
+  },
   tabBar: {
-    height: 80,
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 86,
     paddingTop: 8,
     paddingBottom: 8,
-    borderTopWidth: 1,
-    borderTopColor: Colors.BorderColor,
-    elevation: 8,
-    shadowColor: Colors.BrandDark,
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-  },
-  tabBarBackground: {
-    flex: 1,
     backgroundColor: Colors.White,
+    borderTopWidth: 0.5,
+    elevation: 0,
+    shadowOpacity: 0,
+    overflow: "visible",
   },
   tabBarLabel: {
     fontSize: 11,
@@ -99,5 +158,24 @@ const styles = StyleSheet.create({
   },
   tabBarItem: {
     paddingVertical: 4,
+  },
+  centerButtonOuter: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  centerButton: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    marginTop: -50,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: Colors.BrandPrimary,
+    shadowColor: Colors.Black,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 6,
   },
 });

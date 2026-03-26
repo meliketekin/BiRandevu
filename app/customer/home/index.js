@@ -33,7 +33,7 @@ export default function CustomerAnaSayfa() {
           styles.container,
           {
             paddingTop: 16,
-            paddingBottom: insets.bottom + 24,
+            paddingBottom: insets.bottom + 89,
           },
         ]}
         showsVerticalScrollIndicator={false}
@@ -44,10 +44,8 @@ export default function CustomerAnaSayfa() {
             <CustomText usePrimaryColor semibold lg>
               BuRandevu
             </CustomText>
+            
           </View>
-          <CustomText color={Colors.LightGray} sm style={styles.headerDescription}>
-            Randevu almak için bir kategori seçin
-          </CustomText>
         </View>
 
         <CustomerHomeCarousel />
@@ -60,13 +58,12 @@ export default function CustomerAnaSayfa() {
 
 const styles = StyleSheet.create({
   headerBlock: {
-    marginBottom: 24,
+    marginBottom: 1,
   },
   headerTitle: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 6,
   },
   headerDescription: {
     paddingLeft: 2,

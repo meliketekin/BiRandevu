@@ -40,9 +40,13 @@ const CustomerCategoryGrid = ({ onCategoryPress, onViewAllPress }) => {
   return (
     <View style={styles.section}>
       <View style={styles.headerRow}>
+        <View style={styles.headerTitle}>
         <CustomText bold lg color={Colors.BrandPrimary}>
           Kategorilere Göz At
         </CustomText>
+        <CustomText color={Colors.LightGray} sm style={styles.headerDescription}>
+            Randevu almak için bir kategori seçin
+          </CustomText></View>
         <CustomTouchableOpacity activeOpacity={0.8} onPress={onViewAllPress}>
           <CustomText semibold sm color={Colors.BrandGold}>
             Tümünü Gör
@@ -87,6 +91,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     marginBottom: 16,
+  },
+  headerTitle: {
+    flexDirection: "column",
+    alignItems: "flex-start",
+    gap: 4,
   },
   grid: {
     flexDirection: "row",
