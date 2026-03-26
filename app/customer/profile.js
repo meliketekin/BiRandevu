@@ -2,6 +2,8 @@ import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { signOut } from "firebase/auth";
+import { auth } from "@/firebase";
 import LayoutView from "../../components/high-level/layout-view";
 import CustomText from "../../components/high-level/custom-text";
 import CustomButton from "../../components/high-level/custom-button";
@@ -35,7 +37,8 @@ export default function CustomerProfil() {
     if (item.route) router.push(item.route);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut(auth);
     router.replace("/");
   };
 

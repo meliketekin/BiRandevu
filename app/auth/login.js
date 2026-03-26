@@ -1,9 +1,11 @@
 import { useCallback, useState } from "react";
-import { View, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, TextInput } from "react-native";
+import { View, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, TextInput, ActivityIndicator } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase";
 import LayoutView from "@/components/high-level/layout-view";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
@@ -11,7 +13,7 @@ import Validator from "@/infrastructures/validation";
 
 
 export default function Login() {
-  const [state, setState] = useState({ email: "", password: "", showPassword: false, submitted: false });
+  const [state, setState] = useState({ email: "", password: "", showPassword: false, submitted: false, loading: false, authError: "" });
   const [validator] = useState(() => new Validator());
   const validatorScopeKey = validator.scopeKey;
   const updateState = useCallback((values) => setState((curr) => ({ ...curr, ...values })), []);
@@ -37,14 +39,30 @@ export default function Login() {
     validatorScopeKey,
   });
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     Keyboard.dismiss();
     if (!validator.allValid()) {
       updateState({ submitted: true });
       return;
     }
-    // TODO: auth API
-    router.replace("/customer");
+    updateState({ loading: true, authError: "" });
+    try {
+      await signInWithEmailAndPassword(auth, state.email, state.password);
+      router.replace("/customer");
+    } catch (error) {
+      const code = error?.code;
+      let message = "Giriş yapılamadı. Lütfen tekrar deneyin.";
+      if (code === "auth/user-not-found" || code === "auth/wrong-password" || code === "auth/invalid-credential") {
+        message = "E-posta veya şifre hatalı.";
+      } else if (code === "auth/too-many-requests") {
+        message = "Çok fazla deneme. Lütfen daha sonra tekrar deneyin.";
+      } else if (code === "auth/network-request-failed") {
+        message = "Bağlantı hatası. İnternet bağlantınızı kontrol edin.";
+      }
+      updateState({ authError: message });
+    } finally {
+      updateState({ loading: false });
+    }
   };
 
   return (
@@ -156,10 +174,19 @@ export default function Login() {
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>
-        <Pressable style={styles.signInButton} onPress={handleLogin}>
-          <CustomText bold fontSize={17} color={Colors.White}>
-            Giriş Yap
+        {state.authError ? (
+          <CustomText fontSize={13} color={Colors.ErrorColor} center style={styles.authError}>
+            {state.authError}
           </CustomText>
+        ) : null}
+        <Pressable style={[styles.signInButton, state.loading && styles.buttonDisabled]} onPress={handleLogin} disabled={state.loading}>
+          {state.loading ? (
+            <ActivityIndicator color={Colors.White} />
+          ) : (
+            <CustomText bold fontSize={17} color={Colors.White}>
+              Giriş Yap
+            </CustomText>
+          )}
         </Pressable>
         <View style={styles.footerLink}>
           <CustomText md color={Colors.LightGray2}>
@@ -258,6 +285,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 16,
     backgroundColor: Colors.BrandBackground,
+  },
+  authError: {
+    marginBottom: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   signInButton: {
     height: 56,

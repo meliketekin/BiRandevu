@@ -1,13 +1,14 @@
 import { useCallback, useState } from "react";
-import { View, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, TextInput } from "react-native";
+import { View, Pressable, StyleSheet, Keyboard, TouchableWithoutFeedback, TextInput, ActivityIndicator } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { auth } from "@/firebase";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 import Validator from "@/infrastructures/validation";
-
 import { RoleTypeEnum } from "@/enums/role-type-enum";
 
 export default function Register() {
@@ -20,6 +21,8 @@ export default function Register() {
     phone: "",
     showPassword: false,
     submitted: false,
+    loading: false,
+    authError: "",
   });
   const [validator] = useState(() => new Validator());
   const validatorScopeKey = validator.scopeKey;
@@ -72,14 +75,31 @@ export default function Register() {
       })
     : null;
 
-  const handleRegister = () => {
+  const handleRegister = async () => {
     Keyboard.dismiss();
     if (!validator.allValid()) {
       updateState({ submitted: true });
       return;
     }
-    // TODO: register API
-    router.replace("/customer");
+    updateState({ loading: true, authError: "" });
+    try {
+      const { user } = await createUserWithEmailAndPassword(auth, state.email, state.password);
+      await updateProfile(user, { displayName: state.name });
+      router.replace("/customer");
+    } catch (error) {
+      const code = error?.code;
+      let message = "Kayıt olunamadı. Lütfen tekrar deneyin.";
+      if (code === "auth/email-already-in-use") {
+        message = "Bu e-posta adresi zaten kullanımda.";
+      } else if (code === "auth/invalid-email") {
+        message = "Geçersiz e-posta adresi.";
+      } else if (code === "auth/network-request-failed") {
+        message = "Bağlantı hatası. İnternet bağlantınızı kontrol edin.";
+      }
+      updateState({ authError: message });
+    } finally {
+      updateState({ loading: false });
+    }
   };
 
   const handleRoleChange = (newRole) => {
@@ -320,10 +340,19 @@ export default function Register() {
 
       {/* Footer */}
       <View style={[styles.footer, { paddingBottom: insets.bottom + 24 }]}>
-        <Pressable style={styles.createButton} onPress={handleRegister}>
-          <CustomText bold fontSize={17} color={Colors.White}>
-            {isCustomer ? "Hesap Oluştur" : "İşletme Kaydı Oluştur"}
+        {state.authError ? (
+          <CustomText fontSize={13} color={Colors.ErrorColor} center style={styles.authError}>
+            {state.authError}
           </CustomText>
+        ) : null}
+        <Pressable style={[styles.createButton, state.loading && styles.buttonDisabled]} onPress={handleRegister} disabled={state.loading}>
+          {state.loading ? (
+            <ActivityIndicator color={Colors.White} />
+          ) : (
+            <CustomText bold fontSize={17} color={Colors.White}>
+              {isCustomer ? "Hesap Oluştur" : "İşletme Kaydı Oluştur"}
+            </CustomText>
+          )}
         </Pressable>
         <View style={styles.footerLink}>
           <CustomText md color={Colors.LightGray2}>
@@ -454,6 +483,12 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     borderTopWidth: StyleSheet.hairlineWidth,
     borderTopColor: Colors.BorderColor,
+  },
+  authError: {
+    marginBottom: 12,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
   },
   createButton: {
     height: 56,
