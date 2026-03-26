@@ -1,10 +1,13 @@
 import { View, StyleSheet, ScrollView } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
+import { useDrawerStore } from "@/stores/drawer-store";
+import { Ionicons } from "@expo/vector-icons";
 import LayoutView from "@/components/high-level/layout-view";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 import CustomImage from "@/components/high-level/custom-image";
+import CustomTouchableOpacity from "@/components/high-level/custom-touchable-opacity";
 import CustomerHomeCarousel from "@/components/high-level/customer-home-carousel";
 import CustomerCategoryGrid from "@/components/high-level/customer-category-grid";
 import CustomerPopularNearYou from "@/components/high-level/customer-popular-near-you";
@@ -12,6 +15,7 @@ import CustomerPopularNearYou from "@/components/high-level/customer-popular-nea
 export default function CustomerAnaSayfa() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const openDrawerMenu = useDrawerStore((s) => s.openDrawer);
 
   const handleCategoryPress = (id) => {
     router.push("/customer/home/business-list");
@@ -40,6 +44,9 @@ export default function CustomerAnaSayfa() {
       >
         <View style={styles.headerBlock}>
           <View style={styles.headerTitle}>
+            <CustomTouchableOpacity onPress={openDrawerMenu} style={styles.drawerButton} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
+              <Ionicons name="menu" size={26} color={Colors.BrandDark} />
+            </CustomTouchableOpacity>
             <CustomImage uri={require("../../../assets/logo1.png")} isLocalFile style={styles.headerLogo} contentFit="contain" />
             <CustomText usePrimaryColor semibold lg>
               BuRandevu
@@ -64,6 +71,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+  },
+  drawerButton: {
+    padding: 2,
   },
   headerDescription: {
     paddingLeft: 2,

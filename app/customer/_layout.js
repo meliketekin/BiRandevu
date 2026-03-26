@@ -4,6 +4,10 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/colors";
 import { useEffect, useRef } from "react";
 import { Animated, Pressable, Text, StyleSheet, View } from "react-native";
+import { Drawer } from "react-native-drawer-layout";
+import DrawerSceneWrapper from "@/components/high-level/drawer-scene-wrapper";
+import SideMenu from "@/components/high-level/side-menu";
+import { useDrawerStore } from "@/stores/drawer-store";
 
 const TAB_ICON_SIZE = 24;
 
@@ -68,64 +72,77 @@ export default function CustomerLayout() {
   const segments = useSegments();
   const currentRoute = segments[segments.length - 1];
   const shouldHideTabBar = HIDDEN_TAB_ROUTES.includes(currentRoute);
+  const { isOpen, openDrawer, closeDrawer } = useDrawerStore();
 
   return (
-    <Tabs
-      initialRouteName="home"
-      tabBar={(props) => <AnimatedTabBar {...props} hidden={shouldHideTabBar} />}
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.BrandPrimary,
-        tabBarInactiveTintColor: Colors.LightGray,
-        tabBarStyle: styles.tabBar,
-        tabBarLabelStyle: styles.tabBarLabel,
-        tabBarItemStyle: styles.tabBarItem,
-      }}
+    <Drawer
+      open={isOpen}
+      onOpen={openDrawer}
+      onClose={closeDrawer}
+      drawerType="slide"
+      drawerStyle={styles.drawer}
+      overlayStyle={styles.overlay}
+      renderDrawerContent={() => <SideMenu />}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: "Ana Sayfa",
-          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Ana Sayfa</Text> : null),
-          tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.home.active : TAB_ICONS.home.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="appointments"
-        options={{
-          title: "Randevularım",
-          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Randevularım</Text> : null),
-          tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.appointments.active : TAB_ICONS.appointments.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="create-action"
-        options={{
-          title: "",
-          tabBarLabel: () => null,
-          tabBarIcon: () => null,
-          tabBarButton: () => <CenterActionButton />,
-        }}
-      />
+      <DrawerSceneWrapper isAnimatedWithSideMenu={true}>
+        <Tabs
+          initialRouteName="home"
+          tabBar={(props) => <AnimatedTabBar {...props} hidden={shouldHideTabBar} />}
+          screenOptions={{
+            headerShown: false,
+            tabBarActiveTintColor: Colors.BrandPrimary,
+            tabBarInactiveTintColor: Colors.LightGray,
+            tabBarStyle: styles.tabBar,
+            tabBarLabelStyle: styles.tabBarLabel,
+            tabBarItemStyle: styles.tabBarItem,
+          }}
+        >
+          <Tabs.Screen
+            name="home"
+            options={{
+              title: "Ana Sayfa",
+              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Ana Sayfa</Text> : null),
+              tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.home.active : TAB_ICONS.home.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="appointments"
+            options={{
+              title: "Randevularım",
+              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Randevularım</Text> : null),
+              tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.appointments.active : TAB_ICONS.appointments.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
+            }}
+          />
+          <Tabs.Screen
+            name="create-action"
+            options={{
+              title: "",
+              tabBarLabel: () => null,
+              tabBarIcon: () => null,
+              tabBarButton: () => <CenterActionButton />,
+            }}
+          />
 
-      <Tabs.Screen
-        name="favorites"
-        options={{
-          title: "Favoriler",
-          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Favorilerim</Text> : null),
-          tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.favorites.active : TAB_ICONS.favorites.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
-        }}
-      />
+          <Tabs.Screen
+            name="favorites"
+            options={{
+              title: "Favoriler",
+              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Favorilerim</Text> : null),
+              tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.favorites.active : TAB_ICONS.favorites.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
+            }}
+          />
 
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: "Profil",
-          tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Profil</Text> : null),
-          tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.profile.active : TAB_ICONS.profile.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
-        }}
-      />
-    </Tabs>
+          <Tabs.Screen
+            name="profile"
+            options={{
+              title: "Profil",
+              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Profil</Text> : null),
+              tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.profile.active : TAB_ICONS.profile.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
+            }}
+          />
+        </Tabs>
+      </DrawerSceneWrapper>
+    </Drawer>
   );
 }
 
@@ -137,6 +154,13 @@ const styles = StyleSheet.create({
     bottom: 0,
     zIndex: 20,
     overflow: "visible",
+  },
+  drawer: {
+    backgroundColor: Colors.BrandDark,
+    width: 100,
+  },
+  overlay: {
+    backgroundColor: 'transparent',
   },
   tabBar: {
     position: "absolute",
