@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { doc, setDoc, serverTimestamp } from "firebase/firestore";
 import { auth, db } from "@/firebase";
+import useAuthStore from "@/store/auth-store";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 import Validator from "@/infrastructures/validation";
@@ -28,6 +29,7 @@ export default function Register() {
   const [validator] = useState(() => new Validator());
   const validatorScopeKey = validator.scopeKey;
   const updateState = useCallback((values) => setState((curr) => ({ ...curr, ...values })), []);
+  const setAuth = useAuthStore((s) => s.setAuth);
   const insets = useSafeAreaInsets();
   const isCustomer = state.role === RoleTypeEnum.Customer;
 
@@ -94,12 +96,15 @@ export default function Register() {
         name: state.name,
         email: state.email,
         userType: state.role,
+        isAdmin: state.role !== "customer",
         ...(state.role !== "customer" && {
           businessName: state.businessName,
           phone: state.phone,
         }),
         createdAt: serverTimestamp(),
       });
+      const isAdmin = state.role !== "customer";
+      setAuth(user, state.role, isAdmin);
       router.replace(state.role === "business" ? "/admin" : "/customer");
     } catch (error) {
       console.log(error);
@@ -335,7 +340,7 @@ export default function Register() {
           <CustomText md color={Colors.LightGray2}>
             Zaten hesabınız var mı?{" "}
           </CustomText>
-          <Pressable onPress={() => router.push("/auth/login")} hitSlop={8}>
+          <Pressable onPress={() => router.replace("/auth/login")} hitSlop={8}>
             <CustomText md bold color={Colors.BrandPrimary}>
               Giriş Yap
             </CustomText>

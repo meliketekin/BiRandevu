@@ -7,6 +7,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
+import useAuthStore from "@/store/auth-store";
 import LayoutView from "@/components/high-level/layout-view";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
@@ -18,6 +19,7 @@ export default function Login() {
   const [validator] = useState(() => new Validator());
   const validatorScopeKey = validator.scopeKey;
   const updateState = useCallback((values) => setState((curr) => ({ ...curr, ...values })), []);
+  const setAuth = useAuthStore((s) => s.setAuth);
   const insets = useSafeAreaInsets();
 
   const emailError = validator.registerDestructuring({
@@ -50,7 +52,10 @@ export default function Login() {
     try {
       const { user } = await signInWithEmailAndPassword(auth, state.email, state.password);
       const snap = await getDoc(doc(db, "users", user.uid));
-      const userType = snap.exists() ? snap.data().userType : "customer";
+      const data = snap.exists() ? snap.data() : {};
+      const userType = data.userType ?? "customer";
+      const isAdmin = data.isAdmin ?? false;
+      setAuth(user, userType, isAdmin);
       router.replace(userType === "business" ? "/admin" : "/customer");
     } catch (error) {
       const code = error?.code;
@@ -195,7 +200,7 @@ export default function Login() {
           <CustomText md color={Colors.LightGray2}>
             Hesabınız yok mu?{" "}
           </CustomText>
-          <Pressable onPress={() => router.push("/auth/register")} hitSlop={8}>
+          <Pressable onPress={() => router.replace("/auth/register")} hitSlop={8}>
             <CustomText md bold color={Colors.BrandPrimary}>
               Kayıt Ol
             </CustomText>
