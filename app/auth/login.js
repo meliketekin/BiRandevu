@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase";
 import LayoutView from "@/components/high-level/layout-view";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
@@ -47,8 +48,10 @@ export default function Login() {
     }
     updateState({ loading: true, authError: "" });
     try {
-      await signInWithEmailAndPassword(auth, state.email, state.password);
-      router.replace("/customer");
+      const { user } = await signInWithEmailAndPassword(auth, state.email, state.password);
+      const snap = await getDoc(doc(db, "users", user.uid));
+      const userType = snap.exists() ? snap.data().userType : "customer";
+      router.replace(userType === "business" ? "/admin" : "/customer");
     } catch (error) {
       const code = error?.code;
       let message = "Giriş yapılamadı. Lütfen tekrar deneyin.";

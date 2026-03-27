@@ -1,9 +1,11 @@
+import { useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { signOut } from "firebase/auth";
-import { auth } from "@/firebase";
+import { doc, getDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase";
 import LayoutView from "../../components/high-level/layout-view";
 import CustomText from "../../components/high-level/custom-text";
 import CustomButton from "../../components/high-level/custom-button";
@@ -32,6 +34,15 @@ const PROFILE_MENU = [
 
 export default function CustomerProfil() {
   const insets = useSafeAreaInsets();
+  const [userInfo, setUserInfo] = useState(null);
+
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    getDoc(doc(db, "users", uid)).then((snap) => {
+      if (snap.exists()) setUserInfo(snap.data());
+    });
+  }, []);
 
   const handleMenuPress = (item) => {
     if (item.route) router.push(item.route);
@@ -42,9 +53,8 @@ export default function CustomerProfil() {
     router.replace("/");
   };
 
-  // TODO: Auth'dan kullanıcı bilgisi
-  const userName = "Kullanıcı Adı";
-  const userEmail = "ornek@email.com";
+  const userName = userInfo?.name ?? auth.currentUser?.displayName ?? "Kullanıcı";
+  const userEmail = userInfo?.email ?? auth.currentUser?.email ?? "";
 
   return (
     <LayoutView isActiveHeader={false}>

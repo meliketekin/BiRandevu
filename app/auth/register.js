@@ -5,7 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth } from "@/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db } from "@/firebase";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 import Validator from "@/infrastructures/validation";
@@ -84,9 +85,24 @@ export default function Register() {
     updateState({ loading: true, authError: "" });
     try {
       const { user } = await createUserWithEmailAndPassword(auth, state.email, state.password);
+      console.log(user);
+      console.log(state);
       await updateProfile(user, { displayName: state.name });
-      router.replace("/customer");
+
+      await setDoc(doc(db, "users", user.uid), {
+        uid: user.uid,
+        name: state.name,
+        email: state.email,
+        userType: state.role,
+        ...(state.role !== "customer" && {
+          businessName: state.businessName,
+          phone: state.phone,
+        }),
+        createdAt: serverTimestamp(),
+      });
+      router.replace(state.role === "business" ? "/admin" : "/customer");
     } catch (error) {
+      console.log(error);
       const code = error?.code;
       let message = "Kayıt olunamadı. Lütfen tekrar deneyin.";
       if (code === "auth/email-already-in-use") {
@@ -119,39 +135,19 @@ export default function Register() {
         <View style={styles.headerButton} />
       </View>
 
-      <KeyboardAwareScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-        enableOnAndroid
-      >
+      <KeyboardAwareScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" enableOnAndroid>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
           <View style={styles.container}>
             {/* Role segmented control */}
             <View style={styles.segmentWrapper}>
-              <Pressable
-                style={[styles.segment, isCustomer && styles.segmentActive]}
-                onPress={() => handleRoleChange(RoleTypeEnum.Customer)}
-              >
-                <Ionicons
-                  name={isCustomer ? "person" : "person-outline"}
-                  size={16}
-                  color={isCustomer ? Colors.BrandPrimary : Colors.LightGray}
-                />
+              <Pressable style={[styles.segment, isCustomer && styles.segmentActive]} onPress={() => handleRoleChange(RoleTypeEnum.Customer)}>
+                <Ionicons name={isCustomer ? "person" : "person-outline"} size={16} color={isCustomer ? Colors.BrandPrimary : Colors.LightGray} />
                 <CustomText sm semibold color={isCustomer ? Colors.BrandPrimary : Colors.LightGray}>
                   Müşteri
                 </CustomText>
               </Pressable>
-              <Pressable
-                style={[styles.segment, !isCustomer && styles.segmentActive]}
-                onPress={() => handleRoleChange(RoleTypeEnum.Business)}
-              >
-                <Ionicons
-                  name={!isCustomer ? "storefront" : "storefront-outline"}
-                  size={16}
-                  color={!isCustomer ? Colors.BrandPrimary : Colors.LightGray}
-                />
+              <Pressable style={[styles.segment, !isCustomer && styles.segmentActive]} onPress={() => handleRoleChange(RoleTypeEnum.Business)}>
+                <Ionicons name={!isCustomer ? "storefront" : "storefront-outline"} size={16} color={!isCustomer ? Colors.BrandPrimary : Colors.LightGray} />
                 <CustomText sm semibold color={!isCustomer ? Colors.BrandPrimary : Colors.LightGray}>
                   İşletme Sahibi
                 </CustomText>
@@ -164,15 +160,12 @@ export default function Register() {
                 {isCustomer ? "Hesap Oluştur" : "İşletmenizi Ekleyin"}
               </CustomText>
               <CustomText md color={Colors.LightGray2} style={styles.subtitle}>
-                {isCustomer
-                  ? "Randevu almak için müşteri hesabı oluşturun."
-                  : "Salonunuzu yönetmek için işletme hesabı açın."}
+                {isCustomer ? "Randevu almak için müşteri hesabı oluşturun." : "Salonunuzu yönetmek için işletme hesabı açın."}
               </CustomText>
             </View>
 
             {/* Form */}
             <View style={styles.form}>
-
               {/* Business Name — only for business */}
               {!isCustomer && (
                 <View style={styles.fieldGroup}>
@@ -293,11 +286,7 @@ export default function Register() {
                     keyboardAppearance="light"
                   />
                   <Pressable onPress={() => updateState({ showPassword: !state.showPassword })} style={styles.eyeButton} hitSlop={8}>
-                    <Ionicons
-                      name={state.showPassword ? "eye-outline" : "eye-off-outline"}
-                      size={20}
-                      color={Colors.LightGray}
-                    />
+                    <Ionicons name={state.showPassword ? "eye-outline" : "eye-off-outline"} size={20} color={Colors.LightGray} />
                   </Pressable>
                 </View>
                 {state.submitted && passwordError ? (
@@ -311,23 +300,11 @@ export default function Register() {
               <View style={styles.termsRow}>
                 <CustomText fontSize={12} color={Colors.LightGray2}>
                   Hesap oluşturarak{" "}
-                  <CustomText
-                    fontSize={12}
-                    color={Colors.BrandPrimary}
-                    semibold
-                    style={styles.termsLink}
-                    onPress={() => router.push("/(shared)/kullanim-kosullari")}
-                  >
+                  <CustomText fontSize={12} color={Colors.BrandPrimary} semibold style={styles.termsLink} onPress={() => router.push("/(shared)/kullanim-kosullari")}>
                     Kullanım Koşulları
-                  </CustomText>
-                  {" "}ve{" "}
-                  <CustomText
-                    fontSize={12}
-                    color={Colors.BrandPrimary}
-                    semibold
-                    style={styles.termsLink}
-                    onPress={() => {}}
-                  >
+                  </CustomText>{" "}
+                  ve{" "}
+                  <CustomText fontSize={12} color={Colors.BrandPrimary} semibold style={styles.termsLink} onPress={() => {}}>
                     Gizlilik Politikası
                   </CustomText>
                   {"'nı"} kabul etmiş olursunuz.
