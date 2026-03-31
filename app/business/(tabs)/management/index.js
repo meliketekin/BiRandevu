@@ -85,7 +85,8 @@ export default function Management() {
         caption: "12 aktif ekip uyesi",
         icon: "people-outline",
         image: CARD_IMAGES.employees,
-        route: "/business/employees",
+        route: "/business/management/employees",
+
       },
       {
         key: "services",
