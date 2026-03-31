@@ -69,6 +69,12 @@ export default function BusinessLayout() {
           tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="employees"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
   );
 }

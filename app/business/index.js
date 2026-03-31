@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
-import { getInitials } from "@/utils/general";
+import general from "@/utils/general";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 
@@ -94,7 +94,7 @@ export default function Home() {
 
           <Pressable style={({ pressed }) => [styles.avatarWrap, pressed && styles.pressed]} onPress={() => router.push("/business/profil")}>
             <CustomText xs bold color={Colors.BrandPrimary}>
-              {getInitials(ownerName?.trim() || businessName) || "IS"}
+              {general.getInitials(ownerName?.trim() || businessName) || "IS"}
             </CustomText>
           </Pressable>
         </View>

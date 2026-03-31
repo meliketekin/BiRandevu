@@ -7,7 +7,7 @@ import { router } from "expo-router";
 import { doc, getDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import useAuthStore from "@/store/auth-store";
-import { getInitials } from "@/utils/general";
+import general from "@/utils/general";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 
@@ -85,6 +85,7 @@ export default function Management() {
         caption: "12 aktif ekip uyesi",
         icon: "people-outline",
         image: CARD_IMAGES.employees,
+        route: "/business/employees",
       },
       {
         key: "services",
@@ -157,7 +158,7 @@ export default function Management() {
 
           <Pressable style={({ pressed }) => [styles.avatarButton, pressed && styles.pressed]} onPress={() => router.push("/business/profil")}>
             <CustomText interBold fontSize={12} color={Colors.BrandPrimary}>
-              {getInitials(ownerName?.trim() || businessName) || "BR"}
+              {general.getInitials(ownerName?.trim() || businessName) || "BR"}
             </CustomText>
           </Pressable>
         </View>
