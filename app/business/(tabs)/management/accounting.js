@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import CustomImage from "@/components/high-level/custom-image";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 import { EMPLOYEES } from "./employees-data";
 
 const DAILY_SERIES = {
@@ -289,7 +290,16 @@ export default function AccountingScreen() {
           <SummaryCard icon="receipt-outline" label="GIDERLER" value={formatCurrency(EXPENSES_TOTAL)} />
         </View>
 
-        <Pressable style={({ pressed }) => [styles.netIncomeCard, pressed && styles.pressed]} onPress={() => Alert.alert("Net Bakiye", `${mode === "daily" ? "Gunluk" : "Aylik"} net bakiye: ${netIncome}`)}>
+        <Pressable
+          style={({ pressed }) => [styles.netIncomeCard, pressed && styles.pressed]}
+          onPress={() =>
+            CommandBus.sc.alertInfo(
+              "Net bakiye",
+              `${mode === "daily" ? "Günlük" : "Aylık"} net bakiye: ${netIncome}`,
+              2800,
+            )
+          }
+        >
           <View style={styles.netIncomeTextWrap}>
             <CustomText bold fontSize={10} color={Colors.LightGray2} letterSpacing={1.3}>
               NET BAKIYE

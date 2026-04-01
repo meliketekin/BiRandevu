@@ -1,4 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from "react-native";
+import { Colors } from "@/constants/colors";
 
 export default function ConfirmModal({
   title,
@@ -8,14 +9,20 @@ export default function ConfirmModal({
   onClose,
   confirmText = "Tamam",
   cancelText = "İptal",
+  /** true → onay butonu kırmızı (silme vb.) */
+  destructiveConfirm = false,
 }) {
   const handleCancel = () => {
     onCancel?.();
     onClose?.();
   };
-  const handleConfirm = () => {
-    onConfirm?.();
-    onClose?.();
+
+  const handleConfirm = async () => {
+    try {
+      await Promise.resolve(onConfirm?.());
+    } finally {
+      onClose?.();
+    }
   };
 
   return (
@@ -31,7 +38,10 @@ export default function ConfirmModal({
             <Text style={styles.cancelText}>{cancelText}</Text>
           </Pressable>
           <Pressable
-            style={[styles.button, styles.confirmButton]}
+            style={[
+              styles.button,
+              destructiveConfirm ? styles.confirmButtonDanger : styles.confirmButton,
+            ]}
             onPress={handleConfirm}
           >
             <Text style={styles.confirmText}>{confirmText}</Text>
@@ -85,10 +95,14 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   confirmButton: {
-    backgroundColor: "#007AFF",
+    backgroundColor: Colors.PrimaryColor,
+  },
+  confirmButtonDanger: {
+    backgroundColor: Colors.ErrorColor,
   },
   confirmText: {
     color: "#fff",
     fontSize: 15,
+    fontWeight: "600",
   },
 });

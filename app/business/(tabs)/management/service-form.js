@@ -1,13 +1,31 @@
 import { useState } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, router } from "expo-router";
+import { addDoc, collection, doc, serverTimestamp, updateDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 import LayoutView from "@/components/high-level/layout-view";
-import CustomButton from "@/components/high-level/custom-button";
 import FormInput from "@/components/high-level/custom-input";
+import FormBottomBar from "@/components/high-level/form-bottom-bar";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
+
+/**
+ * Firestore yapısı:
+ *   users/{uid}/services/{serviceId}
+ *     - name:            string
+ *     - description:     string
+ *     - price:           number   (TL, tam sayı — ₺350 → 350)
+ *     - durationMinutes: number   (dakika — 45)
+ *     - isActive:        boolean  (müşteriye gösterilsin mi)
+ *     - createdAt:       Timestamp
+ *     - updatedAt:       Timestamp
+ *
+ * Randevu oluştururken:
+ *   appointments/{id}  →  businessId, serviceId, serviceName*, servicePrice*, durationMinutes*
+ *   (* booking anındaki snapshot — hizmet sonradan değişse bile randevu doğru kalır)
+ */
 
 const DURATION_OPTIONS = [15, 30, 45, 60, 75, 90, 120];
 
@@ -58,19 +76,21 @@ function DurationOption({ value, active, onPress }) {
   );
 }
 
-export default function CreateService() {
-  const insets = useSafeAreaInsets();
+export default function ServiceForm() {
   const params = useLocalSearchParams();
   const isEditMode = params.mode === "edit";
-  const initialName = Array.isArray(params.name) ? params.name[0] : params.name ?? "";
-  const initialDescription = Array.isArray(params.description) ? params.description[0] : params.description ?? "";
-  const initialPrice = Array.isArray(params.price) ? params.price[0] : params.price ?? "";
-  const initialDuration = Array.isArray(params.duration) ? params.duration[0] : params.duration ?? "";
+  const serviceId = Array.isArray(params.id) ? params.id[0] : (params.id ?? null);
+  const initialName = Array.isArray(params.name) ? params.name[0] : (params.name ?? "");
+  const initialDescription = Array.isArray(params.description) ? params.description[0] : (params.description ?? "");
+  const initialPrice = Array.isArray(params.price) ? params.price[0] : (params.price ?? "");
+  const initialDuration = Array.isArray(params.duration) ? params.duration[0] : (params.duration ?? "");
 
   const [serviceName, setServiceName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [price, setPrice] = useState(formatPriceValue(parsePriceValue(initialPrice)));
   const [duration, setDuration] = useState(parseDurationValue(initialDuration));
+  const [isSaving, setIsSaving] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const updatePrice = (value) => {
     setPrice(formatPriceValue(parsePriceValue(value)));
@@ -80,28 +100,60 @@ export default function CreateService() {
     setDuration((prev) => Math.max(5, prev + step));
   };
 
-  const handleCreateService = () => {
-    Alert.alert(
-      isEditMode ? "Hizmet Guncellendi" : "Hizmet Hazirlandi",
-      serviceName
-        ? `${serviceName} hizmeti icin form hazir.`
-        : isEditMode
-          ? "Hizmet duzenleme formu hazirlandi."
-          : "Yeni hizmet formu hazirlandi."
-    );
+  const validate = () => {
+    const next = {};
+    if (!serviceName.trim()) next.name = "Hizmet adı zorunludur.";
+    if (!parsePriceValue(price)) next.price = "Fiyat zorunludur.";
+    setErrors(next);
+    return Object.keys(next).length === 0;
+  };
+
+  const handleSave = async () => {
+    if (!validate()) return;
+
+    const uid = auth.currentUser?.uid;
+    if (!uid) {
+      CommandBus.sc.alertError("Hata", "Kullanıcı bulunamadı.", 2600);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const data = {
+        name: serviceName.trim(),
+        description: description.trim(),
+        price: Number(parsePriceValue(price)),
+        durationMinutes: duration,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (isEditMode && serviceId) {
+        await updateDoc(doc(db, "users", uid, "services", serviceId), data);
+        CommandBus.sc.alertSuccess("Güncellendi", `"${serviceName.trim()}" kaydedildi.`, 2400);
+        router.back();
+      } else {
+        await addDoc(collection(db, "users", uid, "services"), {
+          ...data,
+          isActive: true,
+          createdAt: serverTimestamp(),
+        });
+        CommandBus.sc.alertSuccess("Hizmet eklendi", `"${serviceName.trim()}" listeye eklendi.`, 2400);
+        router.back();
+      }
+    } catch (e) {
+      console.error("ServiceForm save error:", e);
+      CommandBus.sc.alertError("Hata", e?.message ?? "Hizmet kaydedilirken bir sorun oluştu.", 3200);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
-    <LayoutView
-      showBackButton
-      title={isEditMode ? "Hizmet Duzenle" : "Hizmet Olustur"}
-      paddingHorizontal={24}
-      backgroundColor={Colors.BrandBackground}
-    >
+    <LayoutView showBackButton title={isEditMode ? "Hizmeti Düzenle" : "Hizmet Oluştur"} paddingHorizontal={24} backgroundColor={Colors.BrandBackground}>
       <View style={styles.root}>
         <ScrollView
           style={styles.scroll}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
@@ -122,31 +174,21 @@ export default function CreateService() {
           </View>
 
           <View style={styles.section}>
-            <SectionHeader icon="document-text-outline" title="Hizmet Detaylari" subtitle="Temel bilgileri daha net bir form yapisinda duzenle." />
+            <SectionHeader icon="document-text-outline" title="Hizmet Detayları" subtitle="Temel bilgileri eksiksiz doldur." />
+
+            <FormInput label="Hizmet Adı" value={serviceName} onChangeText={(v) => { setServiceName(v); setErrors((e) => ({ ...e, name: null })); }} error={errors.name} />
 
             <FormInput
-              label="Hizmet Adi"
-              value={serviceName}
-              onChangeText={setServiceName}
-              style={styles.input}
-              backgroundColor={Colors.White}
-              borderColor="rgba(196,199,199,0.16)"
-            />
-
-            <FormInput
-              label="Aciklama"
+              label="Açıklama"
               value={description}
               onChangeText={setDescription}
               multiline
-              style={styles.input}
-              backgroundColor={Colors.White}
-              borderColor="rgba(196,199,199,0.16)"
               inputStyle={styles.multilineInput}
             />
           </View>
 
           <View style={styles.section}>
-            <SectionHeader icon="wallet-outline" title="Fiyatlandirma" subtitle="Fiyat otomatik olarak TL formatinda duzenlenir." />
+            <SectionHeader icon="wallet-outline" title="Fiyatlandırma" subtitle="Fiyat otomatik olarak ₺ formatında düzenlenir." />
 
             <View style={styles.featureCard}>
               <View style={styles.featureCardTop}>
@@ -166,20 +208,12 @@ export default function CreateService() {
                 </View>
               </View>
 
-              <FormInput
-                label="Fiyat"
-                value={price}
-                onChangeText={updatePrice}
-                keyboardType="numeric"
-                style={styles.input}
-                backgroundColor="#FCFCFD"
-                borderColor="rgba(196,199,199,0.16)"
-              />
+              <FormInput label="Fiyat" value={price} onChangeText={(v) => { updatePrice(v); setErrors((e) => ({ ...e, price: null })); }} keyboardType="numeric" error={errors.price} />
             </View>
           </View>
 
           <View style={styles.section}>
-            <SectionHeader icon="time-outline" title="Sure Secimi" subtitle="Hazir dakikalar sec veya adimlarla ince ayar yap." />
+            <SectionHeader icon="time-outline" title="Süre Seçimi" subtitle="Hazır dakikalar seç veya adımlarla ince ayar yap." />
 
             <View style={styles.featureCard}>
               <View style={styles.durationTopRow}>
@@ -227,25 +261,12 @@ export default function CreateService() {
           </View>
         </ScrollView>
 
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 18 }]}>
-          <CustomButton
-            title={isEditMode ? "Hizmeti Guncelle" : "Hizmeti Olustur"}
-            onPress={handleCreateService}
-            marginTop={0}
-            height={64}
-            borderRadius={16}
-            backgroundColor={Colors.BrandPrimary}
-            titleStyle={styles.saveTitle}
-            rightIcon={
-              <Ionicons
-                name={isEditMode ? "create-outline" : "add-circle-outline"}
-                size={20}
-                color={Colors.White}
-                style={styles.saveIcon}
-              />
-            }
-          />
-        </View>
+        <FormBottomBar
+          label={isEditMode ? "Hizmeti Güncelle" : "Hizmeti Oluştur"}
+          onPress={handleSave}
+          loading={isSaving}
+          icon={isEditMode ? "create-outline" : "add-circle-outline"}
+        />
       </View>
     </LayoutView>
   );
@@ -260,6 +281,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 12,
+    paddingBottom: 120,
     gap: 28,
   },
   heroCard: {
@@ -307,14 +329,6 @@ const styles = StyleSheet.create({
   },
   sectionHeaderText: {
     flex: 1,
-  },
-  input: {
-    borderRadius: 18,
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.04,
-    shadowRadius: 24,
-    elevation: 3,
   },
   multilineInput: {
     paddingTop: 8,
@@ -410,20 +424,5 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingVertical: 14,
     gap: 4,
-  },
-  bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: 14,
-    backgroundColor: "rgba(247,247,247,0.96)",
-  },
-  saveTitle: {
-    fontFamily: "Urbanist_800ExtraBold",
-    fontSize: 17,
-  },
-  saveIcon: {
-    marginLeft: 8,
   },
 });

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Alert, ImageBackground, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { ImageBackground, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -10,6 +10,7 @@ import useAuthStore from "@/store/auth-store";
 import general from "@/utils/general";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 
 const CARD_IMAGES = {
   employees:
@@ -126,7 +127,7 @@ export default function Management() {
       return;
     }
 
-    Alert.alert("Yolda", `${item.title} ekranı henüz bağlanmadı.`);
+    CommandBus.sc.alertInfo("Yolda", `${item.title} ekranı henüz bağlanmadı.`, 2400);
   };
 
   return (

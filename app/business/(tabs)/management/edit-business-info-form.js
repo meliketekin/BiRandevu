@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ActionSheetIOS, ActivityIndicator, Alert, Platform, Pressable, StyleSheet, View } from "react-native";
+import { ActionSheetIOS, ActivityIndicator, Modal, Platform, Pressable, StyleSheet, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
@@ -8,6 +8,7 @@ import * as ImagePicker from "expo-image-picker";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { auth, db, storage } from "@/firebase";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 import FormInput from "@/components/high-level/custom-input";
 import CustomSelect from "@/components/high-level/custom-select";
 import CustomImage from "@/components/high-level/custom-image";
@@ -90,6 +91,7 @@ export default function EditBusinessInfoForm() {
   const [venuePhotos, setVenuePhotos] = useState([]);
   const [servicePhotos, setServicePhotos] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [photoPickerContext, setPhotoPickerContext] = useState(null);
 
   useEffect(() => {
     const uid = auth.currentUser?.uid;
@@ -136,14 +138,14 @@ export default function EditBusinessInfoForm() {
       if (source === "camera") {
         const { status } = await ImagePicker.requestCameraPermissionsAsync();
         if (status !== "granted") {
-          Alert.alert("İzin Gerekiyor", "Kamera kullanmak için izin vermeniz gerekiyor.");
+          CommandBus.sc.alertInfo("İzin gerekli", "Kamera kullanmak için izin vermeniz gerekiyor.", 2800);
           return;
         }
         result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
-          Alert.alert("İzin Gerekiyor", "Fotoğraflara erişmek için izin vermeniz gerekiyor.");
+          CommandBus.sc.alertInfo("İzin gerekli", "Fotoğraflara erişmek için izin vermeniz gerekiyor.", 2800);
           return;
         }
         result = await ImagePicker.launchImageLibraryAsync({
@@ -162,7 +164,7 @@ export default function EditBusinessInfoForm() {
       const downloadUrl = await uploadPhoto(uri, folder);
       setter((prev) => prev.map((p) => (p.id === photo.id ? { ...p, uploading: false, downloadUrl } : p)));
     } catch {
-      Alert.alert("Hata", "Fotoğraf yüklenirken bir sorun oluştu.");
+      CommandBus.sc.alertError("Hata", "Fotoğraf yüklenirken bir sorun oluştu.", 2800);
       setter((prev) => prev.filter((p) => !p.uploading));
     }
   }, [uploadPhoto]);
@@ -178,21 +180,20 @@ export default function EditBusinessInfoForm() {
         },
       );
     } else {
-      Alert.alert("Fotoğraf ekle", undefined, [
-        { text: "Galeriden seç", onPress: () => pickImage(setter, folder, "gallery") },
-        { text: "Fotoğraf çek", onPress: () => pickImage(setter, folder, "camera") },
-        { text: "İptal", style: "cancel" },
-      ]);
+      setPhotoPickerContext({ setter, folder });
     }
   }, [pickImage]);
 
   const handleSave = async () => {
     const uid = auth.currentUser?.uid;
-    if (!uid) { Alert.alert("Hata", "Kullanıcı bulunamadı."); return; }
+    if (!uid) {
+      CommandBus.sc.alertError("Hata", "Kullanıcı bulunamadı.", 2600);
+      return;
+    }
 
     const uploadingExists = [...venuePhotos, ...servicePhotos].some((p) => p.uploading);
     if (uploadingExists) {
-      Alert.alert("Lütfen bekleyin", "Fotoğraflar yükleniyor, lütfen biraz bekleyin.");
+      CommandBus.sc.alertInfo("Lütfen bekleyin", "Fotoğraflar yükleniyor, lütfen biraz bekleyin.", 2600);
       return;
     }
 
@@ -210,20 +211,32 @@ export default function EditBusinessInfoForm() {
         venuePhotos: venuePhotos.filter((p) => p.downloadUrl).map((p) => p.downloadUrl),
         servicePhotos: servicePhotos.filter((p) => p.downloadUrl).map((p) => p.downloadUrl),
       });
-      Alert.alert("Kaydedildi", `${businessName || "İşletme"} bilgileri güncellendi.`);
+      CommandBus.sc.alertSuccess("Kaydedildi", `${businessName.trim() || "İşletme"} bilgileri güncellendi.`, 2400);
     } catch {
-      Alert.alert("Hata", "Bilgiler kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.");
+      CommandBus.sc.alertError("Hata", "Bilgiler kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.", 3200);
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleChangeLocation = () => {
-    Alert.alert("Yakında", "Konum seçme akışı daha sonra bağlanacak.");
+    CommandBus.sc.alertInfo("Yakında", "Konum seçme akışı daha sonra bağlanacak.", 2400);
   };
 
   const handleArchive = () => {
-    Alert.alert("Profili Arşivle", "İşletme profilini arşivleme akışı daha sonra bağlanacak.");
+    CommandBus.sc.alertInfo("Profili arşivle", "İşletme profilini arşivleme akışı daha sonra bağlanacak.", 2600);
+  };
+
+  const closeAndroidPhotoSheet = () => setPhotoPickerContext(null);
+
+  const onAndroidPhotoSource = (source) => {
+    setPhotoPickerContext((ctx) => {
+      if (ctx) {
+        const { setter, folder } = ctx;
+        queueMicrotask(() => pickImage(setter, folder, source));
+      }
+      return null;
+    });
   };
 
   return (
@@ -335,6 +348,47 @@ export default function EditBusinessInfoForm() {
           </CustomText>
         </Pressable>
       </KeyboardAwareScrollView>
+
+      <Modal
+        visible={!!photoPickerContext}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeAndroidPhotoSheet}
+      >
+        <View style={styles.androidPhotoOverlay}>
+          <Pressable style={styles.androidPhotoBackdrop} onPress={closeAndroidPhotoSheet} />
+          <View style={styles.androidPhotoCard}>
+            <CustomText extraBold fontSize={16} color={Colors.BrandPrimary} style={styles.androidPhotoTitle}>
+              Fotoğraf ekle
+            </CustomText>
+            <Pressable
+              style={({ pressed }) => [styles.androidPhotoRow, pressed && styles.pressed]}
+              onPress={() => onAndroidPhotoSource("gallery")}
+            >
+              <CustomText bold fontSize={15} color={Colors.BrandPrimary}>
+                Galeriden seç
+              </CustomText>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.androidPhotoRow, styles.androidPhotoRowDivider, pressed && styles.pressed]}
+              onPress={() => onAndroidPhotoSource("camera")}
+            >
+              <CustomText bold fontSize={15} color={Colors.BrandPrimary}>
+                Fotoğraf çek
+              </CustomText>
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [styles.androidPhotoRow, styles.androidPhotoRowDivider, pressed && styles.pressed]}
+              onPress={closeAndroidPhotoSheet}
+            >
+              <CustomText medium fontSize={15} color={Colors.LightGray2}>
+                İptal
+              </CustomText>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -418,4 +472,32 @@ const styles = StyleSheet.create({
     marginTop: 8, backgroundColor: "rgba(255,59,48,0.02)",
   },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
+  androidPhotoOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  androidPhotoBackdrop: { ...StyleSheet.absoluteFillObject },
+  androidPhotoCard: {
+    width: "100%",
+    maxWidth: 400,
+    backgroundColor: Colors.White,
+    borderRadius: 16,
+    paddingVertical: 8,
+    zIndex: 1,
+  },
+  androidPhotoTitle: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(0,0,0,0.08)",
+  },
+  androidPhotoRow: { paddingVertical: 14, paddingHorizontal: 18 },
+  androidPhotoRowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.08)",
+  },
 });

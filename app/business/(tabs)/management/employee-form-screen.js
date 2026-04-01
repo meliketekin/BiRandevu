@@ -1,14 +1,14 @@
 import { useMemo, useState } from "react";
-import { Alert, Pressable, StyleSheet, Switch, View } from "react-native";
+import { Pressable, StyleSheet, Switch, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Ionicons } from "@expo/vector-icons";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import LayoutView from "@/components/high-level/layout-view";
-import CustomButton from "@/components/high-level/custom-button";
+import FormBottomBar from "@/components/high-level/form-bottom-bar";
 import CustomImage from "@/components/high-level/custom-image";
 import FormInput from "@/components/high-level/custom-input";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 
 const PLACEHOLDER_IMAGE =
   "https://lh3.googleusercontent.com/aida-public/AB6AXuCM6OwUO70ANEgguwstdMheHY500mP8d5p35g90CXhzjdn8xCehUkNWKHzDvp7dbAQ7S8gZH-Y8KFp7h-9aFIAoE2NOOnk45T6z9XmUwtmG3-7R-qHL1cRdy0k4_T8bt-fx2-ui78khIzA7Ga_QTh-xpUmduLaEt9TTka8FAiLshwpJp6dhqtfpHiynn0LTKp_OMQPeQaDXDBlYpS_rI3dWD9_kcDdGK6_vspey2hBDxwxSnQtXI6VPdA06mGEf-0TSLT2RhSWuXuM";
@@ -128,7 +128,6 @@ function ServiceItem({ item, onRemove }) {
 }
 
 export default function EmployeeFormScreen({ title, saveButtonLabel, submitMessage, employee = null }) {
-  const insets = useSafeAreaInsets();
   const initialHours = useMemo(() => buildHours(employee), [employee]);
   const initialServices = useMemo(() => buildServices(employee), [employee]);
 
@@ -148,11 +147,15 @@ export default function EmployeeFormScreen({ title, saveButtonLabel, submitMessa
   };
 
   const addService = () => {
-    Alert.alert("Yakında", "Hizmet seçme akışı daha sonra bağlanacak.");
+    CommandBus.sc.alertInfo("Yakında", "Hizmet seçme akışı daha sonra bağlanacak.", 2400);
   };
 
   const saveEmployee = () => {
-    Alert.alert(submitMessage.title, name ? `${name} için form hazırlandı.` : submitMessage.description);
+    CommandBus.sc.alertSuccess(
+      submitMessage.title,
+      name ? `${name} için form hazırlandı.` : submitMessage.description,
+      2600,
+    );
   };
 
   return (
@@ -160,7 +163,7 @@ export default function EmployeeFormScreen({ title, saveButtonLabel, submitMessa
       <View style={styles.root}>
         <KeyboardAwareScrollView
           style={styles.scroll}
-          contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 120 }]}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
           enableOnAndroid
@@ -173,15 +176,18 @@ export default function EmployeeFormScreen({ title, saveButtonLabel, submitMessa
               <View style={styles.photoFrame}>
                 <CustomImage uri={imageUri} style={styles.photo} contentFit="cover" />
               </View>
-              <Pressable style={({ pressed }) => [styles.cameraButton, pressed && styles.pressed]} onPress={() => Alert.alert("Yakında", "Foto yükleme akışı daha sonra bağlanacak.")}>
+              <Pressable
+                style={({ pressed }) => [styles.cameraButton, pressed && styles.pressed]}
+                onPress={() => CommandBus.sc.alertInfo("Yakında", "Foto yükleme akışı daha sonra bağlanacak.", 2400)}
+              >
                 <Ionicons name="camera-outline" size={16} color={Colors.White} />
               </Pressable>
             </View>
           </View>
 
           <View style={styles.section}>
-            <FormInput label="Ad Soyad" value={name} onChangeText={setName} style={styles.textField} />
-            <FormInput label="Telefon numarası" value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.textField} />
+            <FormInput label="Ad Soyad" value={name} onChangeText={setName} />
+            <FormInput label="Telefon numarası" value={phone} onChangeText={setPhone} keyboardType="phone-pad" />
           </View>
 
           <View style={styles.section}>
@@ -221,18 +227,7 @@ export default function EmployeeFormScreen({ title, saveButtonLabel, submitMessa
           </View>
         </KeyboardAwareScrollView>
 
-        <View style={[styles.bottomBar, { paddingBottom: insets.bottom + 18 }]}>
-          <CustomButton
-            title={saveButtonLabel}
-            onPress={saveEmployee}
-            marginTop={0}
-            height={64}
-            borderRadius={16}
-            backgroundColor={Colors.BrandPrimary}
-            titleStyle={styles.saveTitle}
-            rightIcon={<Ionicons name="person-add-outline" size={20} color={Colors.White} style={styles.saveIcon} />}
-          />
-        </View>
+        <FormBottomBar label={saveButtonLabel} onPress={saveEmployee} icon="person-add-outline" />
       </View>
     </LayoutView>
   );
@@ -247,6 +242,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: 12,
+    paddingBottom: 120,
     gap: 28,
   },
   photoSection: {
@@ -390,21 +386,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 8,
     backgroundColor: "rgba(255,255,255,0.4)",
-  },
-  bottomBar: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingTop: 14,
-    backgroundColor: "rgba(247,247,247,0.96)",
-  },
-  saveTitle: {
-    fontFamily: "Urbanist_800ExtraBold",
-    fontSize: 17,
-  },
-  saveIcon: {
-    marginLeft: 8,
   },
   pressed: {
     opacity: 0.88,

@@ -1,11 +1,12 @@
 import { useMemo } from "react";
-import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useLocalSearchParams, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import CustomImage from "@/components/high-level/custom-image";
 import CustomText from "@/components/high-level/custom-text";
 import LayoutView from "@/components/high-level/layout-view";
 import { Colors } from "@/constants/colors";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 import { EMPLOYEES } from "./employees-data";
 
 function StatCard({ label, value, icon, highlighted }) {
@@ -29,7 +30,10 @@ function StatCard({ label, value, icon, highlighted }) {
 
 function ServiceCard({ item }) {
   return (
-    <Pressable style={({ pressed }) => [styles.serviceCard, pressed && styles.pressed]} onPress={() => Alert.alert("Yakında", `${item.title} detayı daha sonra bağlanacak.`)}>
+    <Pressable
+      style={({ pressed }) => [styles.serviceCard, pressed && styles.pressed]}
+      onPress={() => CommandBus.sc.alertInfo("Yakında", `${item.title} detayı daha sonra bağlanacak.`, 2400)}
+    >
       <CustomText extraBold fontSize={16} color={Colors.White} style={styles.serviceTitle}>
         {item.title}
       </CustomText>
