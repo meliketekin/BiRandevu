@@ -25,6 +25,8 @@ const CustomSelect = ({
   noIcon = false,
   height,
   duration = 300,
+  backgroundColor,
+  borderColor,
 }) => {
   const hasValue = !general.isNullOrEmpty(value);
 
@@ -89,6 +91,8 @@ const CustomSelect = ({
         styles.container,
         style,
         {
+          borderColor: error ? Colors.ErrorColor : borderColor || Colors.InputBorderColor,
+          backgroundColor: backgroundColor ?? Colors.InputBackground,
           height: resolvedHeight,
           opacity: disabled ? 0.4 : 1,
         },
@@ -151,6 +155,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     width: "100%",
     alignSelf: "center",
+    borderWidth: 1,
     zIndex: -1,
   },
   labelContainer: {

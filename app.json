@@ -47,6 +47,16 @@
     },
     "owner": "bu-randevu",
     "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "deploymentTarget": "15.1",
+            "useFrameworks": "static",
+            "forceStaticLinking": ["RNFBApp", "RNFBAuth"]
+          }
+        }
+      ],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       [

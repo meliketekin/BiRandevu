@@ -1,0 +1,2 @@
+[functions.cleanup-cloudinary]
+verify_jwt = false

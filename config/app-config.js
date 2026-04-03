@@ -13,3 +13,9 @@ const prodConfig = {
 export const AppConfig = {
   ...(AppRunIsProd ? prodConfig : qaConfig),
 };
+
+export const CloudinaryConfig = {
+  CLOUD_NAME: "dohyjrsc0",
+  UPLOAD_PRESET: "cs3p6enw",
+  SUPABASE_CLEANUP_URL: "https://wbqtijlzrgipfadgwpwe.supabase.co/functions/v1/cleanup-cloudinary",
+};
