@@ -10,45 +10,35 @@ import { auth, db } from "@/firebase";
 import CommandBus from "@/infrastructures/command-bus/command-bus";
 import FormInput from "@/components/high-level/custom-input";
 import CustomSelect from "@/components/high-level/custom-select";
-import CustomImage from "@/components/high-level/custom-image";
 import CustomText from "@/components/high-level/custom-text";
 import ImageGallery from "@/components/high-level/image-gallery";
 import FormBottomBar from "@/components/high-level/form-bottom-bar";
 import LocationPickerModal from "@/components/high-level/location-picker-modal";
+import SocialLinksEditor from "@/components/high-level/social-links-editor";
 import { Colors } from "@/constants/colors";
 import { BUSINESS_CATEGORIES, normalizeBusinessCategory } from "@/enums/business-category-enum";
 import { CloudinaryConfig } from "@/config/app-config";
 
-const MAP_PLACEHOLDER =
-  "https://lh3.googleusercontent.com/aida-public/AB6AXuDPNOAETjH58OA-DfRCZTJ3NUAdnYVaAbUA3vs9PFDItQkEWT0oX5pmT4jtw6jbe1v9F43o7SQ-tDl-yV8lKUT2uGpbrgzBMeknnYFSUOipUCjZPh5cGk3WBuGCrvyhP_E1zMlXYCpYxmBsMsv0P0CZtwpDvlyD8u4V_HoRYBrrytwOIzfQP33qU6KSxR0blSPAyMkYeOEI1iSYeXSm6R0UjRzauDMyw5po_5HBWRz4eRNC5gdKjd6Apx3cFbEjHATZX8wfCDcM5Vg";
+const INITIAL_FORM = {
+  venuePhotos: [],
+  servicePhotos: [],
+  socialLinks: [],
+};
 
-const DEFAULT_DESCRIPTION = "Premium hair and beard styling services in the heart of the city.";
-const DEFAULT_ADDRESS = "123 Luxury Ave, Suite 400,\nNew York, NY 10001";
-const LINKS_PLACEHOLDER = "https://ornek.com\nhttps://instagram.com/isletmeniz";
-// Cloudinary URL'den public_id çıkarır
-// https://res.cloudinary.com/{cloud}/image/upload/v123/burandevu/venue/abc.jpg → burandevu/venue/abc
 function extractPublicId(url) {
   if (!url || !url.includes("cloudinary.com")) return null;
   const match = url.match(/\/upload\/(?:v\d+\/)?(.+?)(?:\.[a-z]+)?$/);
   return match ? match[1] : null;
 }
 
-
 export default function EditBusinessInfoForm() {
   const insets = useSafeAreaInsets();
-  const [businessName, setBusinessName] = useState("");
-  const [category, setCategory] = useState("");
-  const [description, setDescription] = useState(DEFAULT_DESCRIPTION);
-  const [address, setAddress] = useState(DEFAULT_ADDRESS);
-  const [phone, setPhone] = useState("");
-  const [whatsappNumber, setWhatsappNumber] = useState("");
-  const [socialLinksText, setSocialLinksText] = useState("");
-  const [venuePhotos, setVenuePhotos] = useState([]);
-  const [servicePhotos, setServicePhotos] = useState([]);
-  const [location, setLocation] = useState(null); // { latitude, longitude }
+  const [form, setForm] = useState(INITIAL_FORM);
   const [isSaving, setIsSaving] = useState(false);
   const [pendingDeleteIds, setPendingDeleteIds] = useState([]);
   const [locationModalVisible, setLocationModalVisible] = useState(false);
+
+  const setField = (key, value) => setForm((prev) => ({ ...prev, [key]: value }));
 
   useEffect(() => {
     const uid = auth.currentUser?.uid;
@@ -58,28 +48,20 @@ export default function EditBusinessInfoForm() {
       .then((snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
-        setBusinessName(data?.businessName ?? "Elite Grooming Co.");
-        setCategory(normalizeBusinessCategory(data?.category ?? ""));
-        setDescription(data?.description ?? DEFAULT_DESCRIPTION);
-        setAddress(data?.address ?? DEFAULT_ADDRESS);
-        if (data?.latitude && data?.longitude) {
-          setLocation({ latitude: data.latitude, longitude: data.longitude });
-        }
-        setPhone(data?.phone ?? "");
-        setWhatsappNumber(data?.whatsappNumber ?? "");
-        if (Array.isArray(data?.socialLinks)) {
-          setSocialLinksText(data.socialLinks.join("\n"));
-        } else {
-          setSocialLinksText(data?.socialLinks ?? "");
-        }
-        if (Array.isArray(data?.venuePhotos)) {
-          setVenuePhotos(data.venuePhotos.map((url, i) => ({ id: `venue-${i}`, uri: url, downloadUrl: url, publicId: extractPublicId(url) })));
-        }
-        if (Array.isArray(data?.servicePhotos)) {
-          setServicePhotos(data.servicePhotos.map((url, i) => ({ id: `service-${i}`, uri: url, downloadUrl: url, publicId: extractPublicId(url) })));
-        }
+        setForm({
+          businessName: data?.businessName ?? "Elite Grooming Co.",
+          category: normalizeBusinessCategory(data?.category ?? ""),
+          description: data?.description ?? DEFAULT_DESCRIPTION,
+          address: data?.address ?? "",
+          phone: data?.phone ?? "",
+          whatsappNumber: data?.whatsappNumber ?? "",
+          socialLinks: Array.isArray(data?.socialLinks) ? data.socialLinks : [],
+          venuePhotos: Array.isArray(data?.venuePhotos) ? data.venuePhotos.map((url, i) => ({ id: `venue-${i}`, uri: url, downloadUrl: url, publicId: extractPublicId(url) })) : [],
+          servicePhotos: Array.isArray(data?.servicePhotos) ? data.servicePhotos.map((url, i) => ({ id: `service-${i}`, uri: url, downloadUrl: url, publicId: extractPublicId(url) })) : [],
+          location: data?.latitude && data?.longitude ? { latitude: data.latitude, longitude: data.longitude } : null,
+        });
       })
-      .catch(() => setBusinessName("Elite Grooming Co."));
+      .catch(() => setField("businessName", "Elite Grooming Co."));
   }, []);
 
   const uploadPhoto = useCallback(async (uri, folder) => {
@@ -99,7 +81,6 @@ export default function EditBusinessInfoForm() {
     return { url: data.secure_url, publicId: data.public_id };
   }, []);
 
-
   const handleSave = async () => {
     const uid = auth.currentUser?.uid;
     if (!uid) {
@@ -114,45 +95,37 @@ export default function EditBusinessInfoForm() {
           photos.map(async (p) => {
             if (p.downloadUrl) return { url: p.downloadUrl, publicId: p.publicId };
             return uploadPhoto(p.uri, folder);
-          })
+          }),
         );
 
-      const [resolvedVenue, resolvedService] = await Promise.all([
-        resolvePhotos(venuePhotos, "venue"),
-        resolvePhotos(servicePhotos, "service"),
-      ]);
-
-      const socialLinks = socialLinksText.split("\n").map((s) => s.trim()).filter(Boolean);
+      const [resolvedVenue, resolvedService] = await Promise.all([resolvePhotos(form.venuePhotos, "venue"), resolvePhotos(form.servicePhotos, "service")]);
 
       const existingDoc = await getDoc(doc(db, "users", uid));
       const existingData = existingDoc.data() ?? {};
-      const existingPublicIds = [
-        ...(existingData.venuePhotos ?? []).map(extractPublicId),
-        ...(existingData.servicePhotos ?? []).map(extractPublicId),
-      ].filter(Boolean);
-      const newPublicIds = new Set([
-        ...resolvedVenue.map((r) => r.publicId),
-        ...resolvedService.map((r) => r.publicId),
-      ]);
+      const existingPublicIds = [...(existingData.venuePhotos ?? []).map(extractPublicId), ...(existingData.servicePhotos ?? []).map(extractPublicId)].filter(Boolean);
+      const newPublicIds = new Set([...resolvedVenue.map((r) => r.publicId), ...resolvedService.map((r) => r.publicId)]);
       const nowOrphaned = existingPublicIds.filter((id) => id && !newPublicIds.has(id));
       const allOrphaned = [...new Set([...pendingDeleteIds, ...nowOrphaned])];
 
       await updateDoc(doc(db, "users", uid), {
-        businessName: businessName.trim(),
-        category,
-        description: description.trim(),
-        address: address.trim(),
-        phone: phone.trim(),
-        whatsappNumber: whatsappNumber.trim(),
-        socialLinks,
+        businessName: form.businessName.trim(),
+        category: form.category,
+        description: form.description.trim(),
+        address: form.address.trim(),
+        phone: form.phone.trim(),
+        whatsappNumber: form.whatsappNumber.trim(),
+        socialLinks: form.socialLinks,
         venuePhotos: resolvedVenue.map((r) => r.url),
         servicePhotos: resolvedService.map((r) => r.url),
         orphanedCloudinaryIds: allOrphaned,
-        ...(location && { latitude: location.latitude, longitude: location.longitude }),
+        ...(form.location && { latitude: form.location.latitude, longitude: form.location.longitude }),
       });
 
-      setVenuePhotos((prev) => prev.map((p, i) => ({ ...p, downloadUrl: resolvedVenue[i].url, publicId: resolvedVenue[i].publicId })));
-      setServicePhotos((prev) => prev.map((p, i) => ({ ...p, downloadUrl: resolvedService[i].url, publicId: resolvedService[i].publicId })));
+      setForm((prev) => ({
+        ...prev,
+        venuePhotos: prev.venuePhotos.map((p, i) => ({ ...p, downloadUrl: resolvedVenue[i].url, publicId: resolvedVenue[i].publicId })),
+        servicePhotos: prev.servicePhotos.map((p, i) => ({ ...p, downloadUrl: resolvedService[i].url, publicId: resolvedService[i].publicId })),
+      }));
       setPendingDeleteIds([]);
 
       if (allOrphaned.length > 0) {
@@ -164,7 +137,7 @@ export default function EditBusinessInfoForm() {
         }).catch((e) => console.warn("Cloudinary cleanup failed:", e));
       }
 
-      CommandBus.sc.alertSuccess("Kaydedildi", `${businessName.trim() || "İşletme"} bilgileri güncellendi.`, 2400);
+      CommandBus.sc.alertSuccess("Kaydedildi", `${form.businessName.trim() || "İşletme"} bilgileri güncellendi.`, 2400);
     } catch (err) {
       console.error("handleSave error:", err);
       CommandBus.sc.alertError("Hata", "Bilgiler kaydedilirken bir sorun oluştu. Lütfen tekrar deneyin.", 3200);
@@ -174,10 +147,6 @@ export default function EditBusinessInfoForm() {
   };
 
   const handleChangeLocation = () => setLocationModalVisible(true);
-
-  const handleArchive = () => {
-    CommandBus.sc.alertInfo("Profili arşivle", "İşletme profilini arşivleme akışı daha sonra bağlanacak.", 2600);
-  };
 
   return (
     <View style={styles.root}>
@@ -208,24 +177,27 @@ export default function EditBusinessInfoForm() {
         {/* Temel bilgiler */}
         <View style={styles.section}>
           <View style={styles.fieldsStack}>
-            <FormInput label="İşletme adı" value={businessName} onChangeText={setBusinessName} style={styles.input} />
-            <FormInput label="Açıklama" value={description} onChangeText={setDescription} multiline style={styles.input} />
+            <FormInput label="İşletme adı" value={form.businessName} onChangeText={(v) => setField("businessName", v)} style={styles.input} />
+            <FormInput label="Açıklama" value={form.description} onChangeText={(v) => setField("description", v)} multiline style={styles.input} />
             <CustomSelect
               label="Kategori"
-              value={category}
+              value={form.category}
               style={styles.input}
               selectModalProps={{
                 title: "Kategori seç",
                 items: BUSINESS_CATEGORIES,
-                selectedValue: category,
-                onSelect: (item) => setCategory(item.value),
+                selectedValue: form.category,
+                onSelect: (item) => setField("category", item.value),
                 isClearable: true,
-                onClear: () => setCategory(""),
+                onClear: () => setField("category", ""),
               }}
             />
-            <FormInput label="Telefon numarası" value={phone} onChangeText={setPhone} keyboardType="phone-pad" style={styles.input} />
-            <FormInput label="WhatsApp numarası" value={whatsappNumber} onChangeText={setWhatsappNumber} keyboardType="phone-pad" style={styles.input} />
-            <FormInput label="Website / Sosyal Medya Linkleri" value={socialLinksText} onChangeText={setSocialLinksText} placeholder={LINKS_PLACEHOLDER} multiline style={styles.input} />
+            <FormInput label="Telefon numarası" value={form.phone} onChangeText={(v) => setField("phone", v)} keyboardType="phone-pad" style={styles.input} />
+            <FormInput label="WhatsApp numarası" value={form.whatsappNumber} onChangeText={(v) => setField("whatsappNumber", v)} keyboardType="phone-pad" style={styles.input} />
+            <SocialLinksEditor
+              links={form.socialLinks}
+              onChange={(links) => setField("socialLinks", links)}
+            />
           </View>
         </View>
 
@@ -237,23 +209,29 @@ export default function EditBusinessInfoForm() {
 
           <ImageGallery
             title="MEKAN FOTOĞRAFLARI"
-            photos={venuePhotos}
-            onAdd={(photo) => setVenuePhotos((prev) => [...prev, photo])}
+            photos={form.venuePhotos}
+            onAdd={(photo) => setField("venuePhotos", [...form.venuePhotos, photo])}
             onRemove={(id) => {
-              const removed = venuePhotos.find((p) => p.id === id);
+              const removed = form.venuePhotos.find((p) => p.id === id);
               if (removed?.publicId) setPendingDeleteIds((prev) => [...prev, removed.publicId]);
-              setVenuePhotos((prev) => prev.filter((p) => p.id !== id));
+              setField(
+                "venuePhotos",
+                form.venuePhotos.filter((p) => p.id !== id),
+              );
             }}
           />
 
           <ImageGallery
             title="İŞLEM FOTOĞRAFLARI"
-            photos={servicePhotos}
-            onAdd={(photo) => setServicePhotos((prev) => [...prev, photo])}
+            photos={form.servicePhotos}
+            onAdd={(photo) => setField("servicePhotos", [...form.servicePhotos, photo])}
             onRemove={(id) => {
-              const removed = servicePhotos.find((p) => p.id === id);
+              const removed = form.servicePhotos.find((p) => p.id === id);
               if (removed?.publicId) setPendingDeleteIds((prev) => [...prev, removed.publicId]);
-              setServicePhotos((prev) => prev.filter((p) => p.id !== id));
+              setField(
+                "servicePhotos",
+                form.servicePhotos.filter((p) => p.id !== id),
+              );
             }}
           />
         </View>
@@ -265,20 +243,25 @@ export default function EditBusinessInfoForm() {
           </CustomText>
           <View style={styles.locationCard}>
             <View style={styles.mapWrap}>
-              {location ? (
+              {form.location ? (
                 <MapView
                   style={styles.mapImage}
-                  region={{ ...location, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
+                  region={{ ...form.location, latitudeDelta: 0.01, longitudeDelta: 0.01 }}
                   scrollEnabled={false}
                   zoomEnabled={false}
                   pitchEnabled={false}
                   rotateEnabled={false}
                   pointerEvents="none"
                 >
-                  <Marker coordinate={location} pinColor={Colors.Gold} />
+                  <Marker coordinate={form.location} pinColor={Colors.Gold} />
                 </MapView>
               ) : (
-                <CustomImage uri={MAP_PLACEHOLDER} style={styles.mapImage} contentFit="cover" />
+                <View style={styles.mapPlaceholder}>
+                  <Ionicons name="map-outline" size={40} color="#C0C0C0" />
+                  <CustomText fontSize={12} color="#C0C0C0" style={{ marginTop: 8 }}>
+                    Konum seçilmedi
+                  </CustomText>
+                </View>
               )}
               <Pressable style={({ pressed }) => [styles.changeLocationButton, pressed && styles.pressed]} onPress={handleChangeLocation}>
                 <Ionicons name="location-outline" size={14} color={Colors.BrandPrimary} />
@@ -287,28 +270,23 @@ export default function EditBusinessInfoForm() {
                 </CustomText>
               </Pressable>
             </View>
-            <View style={styles.locationBody}>
-              <CustomText medium fontSize={14} color={Colors.BrandPrimary} style={styles.addressText}>
-                {address}
-              </CustomText>
-            </View>
+            {form.location && form.address ? (
+              <View style={styles.locationBody}>
+                <CustomText medium fontSize={14} color={Colors.BrandPrimary} style={styles.addressText}>
+                  {form.address}
+                </CustomText>
+              </View>
+            ) : null}
           </View>
         </View>
-
-        <Pressable style={({ pressed }) => [styles.archiveButton, pressed && styles.pressed]} onPress={handleArchive}>
-          <CustomText bold fontSize={10} color={Colors.ErrorColor} letterSpacing={1.8}>
-            İŞLETME PROFİLİNİ ARŞİVLE
-          </CustomText>
-        </Pressable>
       </KeyboardAwareScrollView>
 
       <LocationPickerModal
         visible={locationModalVisible}
-        initialLocation={location}
-        initialAddress={address}
+        initialLocation={form.location}
+        initialAddress={form.address}
         onConfirm={({ latitude, longitude, address: newAddress }) => {
-          setLocation({ latitude, longitude });
-          setAddress(newAddress);
+          setForm((prev) => ({ ...prev, location: { latitude, longitude }, address: newAddress }));
           setLocationModalVisible(false);
         }}
         onClose={() => setLocationModalVisible(false)}
@@ -365,6 +343,7 @@ const styles = StyleSheet.create({
   },
   mapWrap: { height: 208, position: "relative", backgroundColor: "#EFEFEF" },
   mapImage: { width: "100%", height: "100%", opacity: 0.86 },
+  mapPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F5F5" },
   mapOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
   pinWrap: {
     width: 54,
