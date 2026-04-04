@@ -49,12 +49,12 @@ export default function EditBusinessInfoForm() {
         if (!snap.exists()) return;
         const data = snap.data();
         setForm({
-          businessName: data?.businessName ?? "Elite Grooming Co.",
+          businessName: data?.businessName,
           category: normalizeBusinessCategory(data?.category ?? ""),
-          description: data?.description ?? DEFAULT_DESCRIPTION,
-          address: data?.address ?? "",
-          phone: data?.phone ?? "",
-          whatsappNumber: data?.whatsappNumber ?? "",
+          description: data?.description,
+          address: data?.address,
+          phone: data?.phone,
+          whatsappNumber: data?.whatsappNumber,
           socialLinks: Array.isArray(data?.socialLinks) ? data.socialLinks : [],
           venuePhotos: Array.isArray(data?.venuePhotos) ? data.venuePhotos.map((url, i) => ({ id: `venue-${i}`, uri: url, downloadUrl: url, publicId: extractPublicId(url) })) : [],
           servicePhotos: Array.isArray(data?.servicePhotos) ? data.servicePhotos.map((url, i) => ({ id: `service-${i}`, uri: url, downloadUrl: url, publicId: extractPublicId(url) })) : [],
@@ -149,23 +149,20 @@ export default function EditBusinessInfoForm() {
   const handleChangeLocation = () => setLocationModalVisible(true);
 
   return (
-    <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 4 }]}>
-        <View style={styles.headerInner}>
-          <View style={styles.headerLeft}>
-            <Pressable style={({ pressed }) => [styles.headerIconButton, pressed && styles.pressed]} onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
-            </Pressable>
-            <CustomText extraBold fontSize={19} color={Colors.BrandPrimary} style={styles.headerTitle}>
-              İşletme bilgileri
-            </CustomText>
-          </View>
-        </View>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <View style={styles.header}>
+        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
+        </Pressable>
+        <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.headerTitle}>
+          İşletme bilgileri
+        </CustomText>
+        <View style={styles.headerRightSpacer} />
       </View>
 
       <KeyboardAwareScrollView
         style={styles.scroll}
-        contentContainerStyle={{ paddingTop: insets.top + 88, paddingBottom: 120, paddingHorizontal: 20 }}
+        contentContainerStyle={{ paddingTop: 14, paddingBottom: 120, paddingHorizontal: 16 }}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         enableOnAndroid
@@ -194,10 +191,7 @@ export default function EditBusinessInfoForm() {
             />
             <FormInput label="Telefon numarası" value={form.phone} onChangeText={(v) => setField("phone", v)} keyboardType="phone-pad" style={styles.input} />
             <FormInput label="WhatsApp numarası" value={form.whatsappNumber} onChangeText={(v) => setField("whatsappNumber", v)} keyboardType="phone-pad" style={styles.input} />
-            <SocialLinksEditor
-              links={form.socialLinks}
-              onChange={(links) => setField("socialLinks", links)}
-            />
+            <SocialLinksEditor links={form.socialLinks} onChange={(links) => setField("socialLinks", links)} />
           </View>
         </View>
 
@@ -209,8 +203,9 @@ export default function EditBusinessInfoForm() {
 
           <ImageGallery
             title="MEKAN FOTOĞRAFLARI"
+            contentHorizontalPadding={32}
             photos={form.venuePhotos}
-            onAdd={(photo) => setField("venuePhotos", [...form.venuePhotos, photo])}
+            onAdd={(newPhotos) => setForm((prev) => ({ ...prev, venuePhotos: [...prev.venuePhotos, ...newPhotos] }))}
             onRemove={(id) => {
               const removed = form.venuePhotos.find((p) => p.id === id);
               if (removed?.publicId) setPendingDeleteIds((prev) => [...prev, removed.publicId]);
@@ -223,8 +218,9 @@ export default function EditBusinessInfoForm() {
 
           <ImageGallery
             title="İŞLEM FOTOĞRAFLARI"
+            contentHorizontalPadding={32}
             photos={form.servicePhotos}
-            onAdd={(photo) => setField("servicePhotos", [...form.servicePhotos, photo])}
+            onAdd={(newPhotos) => setForm((prev) => ({ ...prev, servicePhotos: [...prev.servicePhotos, ...newPhotos] }))}
             onRemove={(id) => {
               const removed = form.servicePhotos.find((p) => p.id === id);
               if (removed?.publicId) setPendingDeleteIds((prev) => [...prev, removed.publicId]);
@@ -300,33 +296,20 @@ export default function EditBusinessInfoForm() {
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: Colors.BrandBackground },
   header: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 20,
-    backgroundColor: "rgba(255,255,255,0.94)",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(20,20,20,0.04)",
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.04,
-    shadowRadius: 18,
-    elevation: 6,
-  },
-  headerInner: {
-    height: 64,
-    paddingHorizontal: 20,
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    justifyContent: "space-between",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: Colors.BrandBackground,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(20,20,20,0.05)",
   },
-  headerLeft: { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  headerIconButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
+  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
   headerTitle: { letterSpacing: -0.5 },
+  headerRightSpacer: { width: 40, height: 40 },
   scroll: { flex: 1 },
   section: { marginBottom: 28, gap: 12 },
-  sectionRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 12 },
   sectionLabel: { paddingHorizontal: 2 },
   fieldsStack: { gap: 16 },
   input: { borderRadius: 18 },
@@ -344,20 +327,6 @@ const styles = StyleSheet.create({
   mapWrap: { height: 208, position: "relative", backgroundColor: "#EFEFEF" },
   mapImage: { width: "100%", height: "100%", opacity: 0.86 },
   mapPlaceholder: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#F5F5F5" },
-  mapOverlay: { ...StyleSheet.absoluteFillObject, alignItems: "center", justifyContent: "center" },
-  pinWrap: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: Colors.BrandPrimary,
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.2,
-    shadowRadius: 20,
-    elevation: 5,
-  },
   changeLocationButton: {
     position: "absolute",
     right: 14,
@@ -372,15 +341,5 @@ const styles = StyleSheet.create({
   },
   locationBody: { padding: 18 },
   addressText: { lineHeight: 22 },
-  archiveButton: {
-    minHeight: 56,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(255,59,48,0.18)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 8,
-    backgroundColor: "rgba(255,59,48,0.02)",
-  },
   pressed: { opacity: 0.88, transform: [{ scale: 0.985 }] },
 });

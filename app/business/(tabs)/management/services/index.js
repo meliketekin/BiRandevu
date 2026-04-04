@@ -83,7 +83,7 @@ export default function Services() {
         </CustomText>
         <Pressable
           style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-          onPress={() => router.push("/business/management/service-form")}
+          onPress={() => router.push("/business/management/services/form")}
         >
           <Ionicons name="add" size={20} color={Colors.White} />
         </Pressable>
@@ -153,7 +153,7 @@ export default function Services() {
                     disabled={deletingId === service.id}
                     onPress={() =>
                       router.push({
-                        pathname: "/business/management/service-form",
+                        pathname: "/business/management/services/form",
                         params: {
                           mode: "edit",
                           id: service.id,

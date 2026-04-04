@@ -81,7 +81,7 @@ function EmployeeEarningCard({ employee }) {
       style={({ pressed }) => [styles.employeeCard, pressed && styles.pressed]}
       onPress={() =>
         router.push({
-          pathname: "/business/management/[id]",
+          pathname: "/business/management/employees/[id]",
           params: { id: employee.id },
         })
       }

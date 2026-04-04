@@ -24,12 +24,6 @@ const CARD_IMAGES = {
     "https://lh3.googleusercontent.com/aida-public/AB6AXuA8Qmk6_BeJlpR4yJZoROnyu8LS7JlGh2W-xVT7mepI0cuJjAus5Pqt4RKvj1XcmRJqexmAvSGKVI7wOyJCSTr8NnpEZlCrcqTaKuq1wP8pQcfmkG-c4q7OqwqrObVWSxLrUCfedtHs2O_EHlZfFZ4_4k-WdTbkB2K1OQPNrNfk-PiIZZXJuCXOg-YgwKmxQH5SpXrP2dVN1ZJuM2Ws1UoCC6nAoBi-TR_RxFdEjalw68RM0yqIoXzrXg43S0oxRjlekG0Ig7AGlUw",
 };
 
-const PENDING_TASKS = [
-  { id: "1", initials: "AY", name: "Aylin Yilmaz" },
-  { id: "2", initials: "BK", name: "Berk Kara" },
-  { id: "3", initials: "ST", name: "Selin Topal" },
-];
-
 function DashboardActionCard({ item, featured, onPress }) {
   return (
     <Pressable style={({ pressed }) => [featured ? styles.featuredCardShell : styles.gridCardShell, pressed && styles.pressed]} onPress={onPress}>
@@ -72,8 +66,8 @@ export default function Management() {
       .catch(() => null);
   }, []);
 
-  const businessName = userInfo?.businessName ?? "BuRandevu Studio";
-  const ownerName = userInfo?.name ?? auth.currentUser?.displayName ?? "İşletme sahibi";
+  const businessName = userInfo?.businessName;
+  const ownerName = userInfo?.name ?? "İşletme sahibi";
   const roleLabel = isAdmin ? "MASTER DASHBOARD" : "OPERASYON PANELİ";
 
   const dashboardCards = useMemo(
@@ -100,7 +94,7 @@ export default function Management() {
         caption: "Şube profilini düzenle",
         icon: "business-outline",
         image: CARD_IMAGES.business,
-        route: "/business/management/edit-business-info-form",
+        route: "/business/management/business-info",
       },
       {
         key: "hours",
@@ -225,17 +219,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#E4E4E7",
   },
-  greetingBlock: {
-    marginBottom: 24,
-    gap: 6,
-  },
-  screenTitle: {
-    letterSpacing: -1,
-  },
-  screenDescription: {
-    lineHeight: 20,
-    maxWidth: 320,
-  },
   gridWrap: {
     gap: 14,
   },
@@ -314,68 +297,6 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     justifyContent: "space-between",
     rowGap: 14,
-  },
-  insightsWrap: {
-    marginTop: 24,
-    gap: 14,
-  },
-  infoCard: {
-    backgroundColor: Colors.White,
-    borderRadius: 24,
-    padding: 18,
-    borderWidth: 1,
-    borderColor: "#F0F0F0",
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.05,
-    shadowRadius: 24,
-    elevation: 3,
-    gap: 14,
-  },
-  performanceRow: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    gap: 12,
-  },
-  performanceTextWrap: {
-    gap: 4,
-    flexShrink: 1,
-  },
-  trendBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 999,
-    backgroundColor: "rgba(16,185,129,0.12)",
-  },
-  pendingContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  avatarStack: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  pendingAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#E8E8E8",
-    borderWidth: 2,
-    borderColor: Colors.White,
-  },
-  pendingAvatarOverlap: {
-    marginLeft: -10,
-  },
-  pendingAvatarMuted: {
-    backgroundColor: "#F3F4F6",
-  },
-  pendingText: {
-    flex: 1,
-    lineHeight: 19,
   },
   pressed: {
     opacity: 0.9,

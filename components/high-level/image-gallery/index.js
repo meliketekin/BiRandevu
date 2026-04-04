@@ -12,8 +12,8 @@ const MAX_PHOTOS = 12;
 const GRID_GAP = 14;
 const GRID_COLUMNS = 3;
 
-function makeLocalPhoto(uri) {
-  return { id: Date.now().toString() + Math.random().toString(36).slice(2), uri };
+function makeLocalPhoto(uri, index = 0) {
+  return { id: (Date.now() + index).toString() + Math.random().toString(36).slice(2), uri };
 }
 
 function GalleryItem({ item, onRemove, onPress, cellStyle }) {
@@ -60,26 +60,29 @@ function ImageGallery({ title, photos, onAdd, onRemove, maxPhotos = MAX_PHOTOS, 
           return;
         }
         result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.85 });
+        if (result.canceled) return;
+        onAdd([makeLocalPhoto(result.assets[0].uri)]);
       } else {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== "granted") {
           CommandBus.sc.alertInfo("İzin gerekli", "Fotoğraflara erişmek için izin vermeniz gerekiyor.", 2800);
           return;
         }
+        const remaining = maxPhotos - photos.length;
         result = await ImagePicker.launchImageLibraryAsync({
           mediaTypes: ["images"],
-          allowsEditing: true,
+          allowsMultipleSelection: true,
+          selectionLimit: remaining,
           quality: 0.85,
         });
+        if (result.canceled) return;
+        onAdd(result.assets.map((asset, i) => makeLocalPhoto(asset.uri, i)));
       }
-
-      if (result.canceled) return;
-      onAdd(makeLocalPhoto(result.assets[0].uri));
     } catch (err) {
       console.error("pickImage error:", err);
       CommandBus.sc.alertError("Hata", "Fotoğraf seçilirken bir sorun oluştu.", 2800);
     }
-  }, [onAdd]);
+  }, [onAdd, photos.length, maxPhotos]);
 
   const handleAdd = useCallback(() => {
     if (Platform.OS === "ios") {
