@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Keyboard, Modal, Platform, Pressable, ScrollView, StyleSheet, Switch, TextInput, TouchableWithoutFeedback, View } from "react-native";
 import { openModal, ModalTypeEnum } from "@/components/high-level/modal-renderer";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { router, useNavigation } from "expo-router";
 import { Calendar as RNCalendar, LocaleConfig } from "react-native-calendars";
 import DateTimePicker from "@/components/high-level/date-time-picker";
+import LayoutView from "@/components/high-level/layout-view";
 import FormBottomBar from "@/components/high-level/form-bottom-bar";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
@@ -250,7 +250,6 @@ function SpecialDayRow({ item, isLast, onToggle, onTimeChange, onRemove }) {
 }
 
 export default function WorkingHours() {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [hours, setHours] = useState(DEFAULT_HOURS);
   const [specialDays, setSpecialDays] = useState([]);
@@ -540,17 +539,13 @@ export default function WorkingHours() {
   }, [handleAttemptLeave, hasUnsavedChanges, isSaving, navigation]);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => handleAttemptLeave()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
-        </Pressable>
-        <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.headerTitle}>
-          Çalışma saatleri
-        </CustomText>
-        <View style={styles.headerRightSpacer} />
-      </View>
-
+    <LayoutView
+      showBackButton
+      title="Çalışma saatleri"
+      backgroundColor={Colors.BrandBackground}
+      onBackPress={() => handleAttemptLeave()}
+      paddingHorizontal={0}
+    >
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingTop: 14, paddingBottom: 120, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <View style={styles.noteCard}>
@@ -709,25 +704,11 @@ export default function WorkingHours() {
           </Pressable>
         ) : null}
       </Modal>
-    </View>
+    </LayoutView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.BrandBackground },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.BrandBackground,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(20,20,20,0.05)",
-  },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  headerTitle: { letterSpacing: -0.5 },
-  headerRightSpacer: { width: 40, height: 40 },
   scroll: { flex: 1 },
   section: { gap: 12 },
   specialDaysSection: { gap: 12, marginBottom: 50 },

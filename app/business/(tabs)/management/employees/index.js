@@ -1,17 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, getDocs, onSnapshot, orderBy, query } from "firebase/firestore";
 import { auth, db } from "@/firebase";
+import LayoutView from "@/components/high-level/layout-view";
 import CustomText from "@/components/high-level/custom-text";
 import CustomImage from "@/components/high-level/custom-image";
 import ActivityLoading from "@/components/high-level/activity-loading";
 import { Colors } from "@/constants/colors";
 
 export default function Employees() {
-  const insets = useSafeAreaInsets();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +34,6 @@ export default function Employees() {
     return unsubscribe;
   }, []);
 
-  /** Ekrana dönünce (stack’ten geri gelince) liste sunucu ile hizalansın */
   useFocusEffect(
     useCallback(() => {
       const uid = auth.currentUser?.uid;
@@ -49,25 +47,16 @@ export default function Employees() {
   );
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
-        </Pressable>
-        <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.headerTitle}>
-          Ekibim
-        </CustomText>
-        <Pressable
-          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-          onPress={() => router.push("/business/management/employees/form")}
-        >
-          <Ionicons name="add" size={20} color={Colors.White} />
-        </Pressable>
-      </View>
-
+    <LayoutView
+      showBackButton
+      title="Ekibim"
+      backgroundColor={Colors.BrandBackground}
+      paddingHorizontal={0}
+      onAddPress={() => router.push("/business/management/employees/form")}
+    >
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 112 }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         {loading ? (
@@ -113,41 +102,13 @@ export default function Employees() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </LayoutView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.BrandBackground },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.BrandBackground,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(20,20,20,0.05)",
-  },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  headerTitle: { letterSpacing: -0.5 },
-  addButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.BrandPrimary,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1.5,
-    borderColor: Colors.Gold,
-    shadowColor: Colors.Gold,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 4,
-  },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 14 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 112 },
   loader: { minHeight: 160 },
   emptyState: { alignItems: "center", paddingVertical: 48, gap: 10 },
   emptyIconWrap: {

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { View, StyleSheet, ScrollView, Pressable } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { collection, deleteDoc, doc, onSnapshot, orderBy, query } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import { openModal, ModalTypeEnum } from "@/components/high-level/modal-renderer";
 import CommandBus from "@/infrastructures/command-bus/command-bus";
+import LayoutView from "@/components/high-level/layout-view";
 import ActivityLoading from "@/components/high-level/activity-loading";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
@@ -20,7 +20,6 @@ function formatDuration(minutes) {
 }
 
 export default function Services() {
-  const insets = useSafeAreaInsets();
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
@@ -73,25 +72,16 @@ export default function Services() {
   }, []);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => router.back()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
-        </Pressable>
-        <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.headerTitle}>
-          Hizmetler
-        </CustomText>
-        <Pressable
-          style={({ pressed }) => [styles.addButton, pressed && styles.pressed]}
-          onPress={() => router.push("/business/management/services/form")}
-        >
-          <Ionicons name="add" size={20} color={Colors.White} />
-        </Pressable>
-      </View>
-
+    <LayoutView
+      showBackButton
+      title="Hizmetler"
+      backgroundColor={Colors.BrandBackground}
+      paddingHorizontal={0}
+      onAddPress={() => router.push("/business/management/services/form")}
+    >
       <ScrollView
         style={styles.scroll}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 112 }]}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.heroCard}>
@@ -180,29 +170,13 @@ export default function Services() {
           </View>
         )}
       </ScrollView>
-    </View>
+    </LayoutView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.BrandBackground },
-  header: {
-    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-    paddingHorizontal: 16, paddingVertical: 12,
-    backgroundColor: Colors.BrandBackground,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(20,20,20,0.05)",
-  },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  headerTitle: { letterSpacing: -0.5 },
-  addButton: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: Colors.BrandPrimary, alignItems: "center", justifyContent: "center",
-    borderWidth: 1.5, borderColor: Colors.Gold,
-    shadowColor: Colors.Gold, shadowOffset: { width: 0, height: 3 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 4,
-  },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingTop: 14, gap: 14 },
+  scrollContent: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 112, gap: 14 },
   heroCard: {
     backgroundColor: Colors.White, borderRadius: 24, padding: 20, gap: 10,
     borderWidth: 1, borderColor: "rgba(196,199,199,0.14)",

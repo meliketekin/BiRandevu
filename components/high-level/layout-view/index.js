@@ -1,7 +1,7 @@
 import { Colors } from "../../../constants/colors";
 import { router } from "expo-router";
 import { memo, useMemo } from "react";
-import { Keyboard, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
+import { Keyboard, Pressable, ScrollView, StyleSheet, TouchableOpacity, TouchableWithoutFeedback, View } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -19,6 +19,7 @@ const LayoutView = ({
   onBackPress,
   leftButton,
   rightButton,
+  onAddPress,
   contentContainerStyle,
   refreshControl,
   leftAction,
@@ -99,7 +100,15 @@ const LayoutView = ({
             </CustomText>
           </View>
           <View style={{ width: "15%", alignItems: "flex-end" }}>
-            <View style={styles.buttonStyle}>{rightButton}</View>
+            <View style={styles.buttonStyle}>
+              {onAddPress ? (
+                <Pressable style={styles.addButton} onPress={onAddPress}>
+                  <Ionicons name="add" size={20} color={Colors.White} />
+                </Pressable>
+              ) : (
+                rightButton
+              )}
+            </View>
           </View>
         </View>
       )}
@@ -126,6 +135,21 @@ const styles = StyleSheet.create({
   buttonStyle: {
     height: 40,
     justifyContent: "center",
+  },
+  addButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.BrandPrimary,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: Colors.Gold,
+    shadowColor: Colors.Gold,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   titleContainer: {
     flexDirection: "row",

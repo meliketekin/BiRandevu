@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import LayoutView from "@/components/high-level/layout-view";
 import CustomImage from "@/components/high-level/custom-image";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
@@ -49,26 +50,10 @@ function formatCurrency(value) {
   return `₺${value.toLocaleString("tr-TR")}`;
 }
 
-function getInitials(name) {
-  return (name || "")
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-}
-
 function SegmentedButton({ active, label, onPress }) {
   return (
     <Pressable style={({ pressed }) => [styles.segmentButton, active && styles.segmentButtonActive, pressed && styles.pressed]} onPress={onPress}>
-      <CustomText
-        bold
-        fontSize={11}
-        color={active ? Colors.White : Colors.LightGray2}
-        letterSpacing={0.8}
-        style={styles.segmentLabel}
-      >
+      <CustomText bold fontSize={11} color={active ? Colors.White : Colors.LightGray2} letterSpacing={0.8} style={styles.segmentLabel}>
         {label}
       </CustomText>
     </Pressable>
@@ -118,12 +103,7 @@ function SummaryCard({ dark, icon, label, value }) {
       </View>
 
       <View style={styles.summaryTextWrap}>
-        <CustomText
-          bold
-          fontSize={10}
-          color={dark ? "rgba(255,255,255,0.56)" : Colors.LightGray2}
-          letterSpacing={1.2}
-        >
+        <CustomText bold fontSize={10} color={dark ? "rgba(255,255,255,0.56)" : Colors.LightGray2} letterSpacing={1.2}>
           {label}
         </CustomText>
         <CustomText extraBold fontSize={28} color={dark ? Colors.White : Colors.BrandPrimary} style={styles.summaryValue}>
@@ -140,48 +120,21 @@ export default function AccountingScreen() {
 
   const chartData = mode === "daily" ? DAILY_SERIES : MONTHLY_SERIES;
 
-  const topEmployees = useMemo(
-    () =>
-      [...EMPLOYEES]
-        .sort((a, b) => parseRevenue(b.totalRevenue) - parseRevenue(a.totalRevenue))
-        .slice(0, 3),
-    []
-  );
+  const topEmployees = useMemo(() => [...EMPLOYEES].sort((a, b) => parseRevenue(b.totalRevenue) - parseRevenue(a.totalRevenue)).slice(0, 3), []);
 
   const netIncome = useMemo(() => formatCurrency(chartData.total - PAYOUTS_TOTAL - EXPENSES_TOTAL), [chartData.total]);
 
   return (
-    <View style={styles.root}>
+    <LayoutView showBackButton title="Muhasebe" backgroundColor={Colors.BrandBackground} paddingHorizontal={0}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={{
-          paddingTop: insets.top + 12,
+          paddingTop: 12,
           paddingBottom: insets.bottom + 40,
           paddingHorizontal: 18,
         }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.header}>
-          <Pressable style={({ pressed }) => [styles.headerIconButton, pressed && styles.pressed]} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
-          </Pressable>
-
-          <View style={styles.headerTitleWrap}>
-            <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.headerTitle}>
-              Muhasebe
-            </CustomText>
-            <CustomText semibold fontSize={11} color={Colors.LightGray2}>
-              Gelir ve ekip performansi
-            </CustomText>
-          </View>
-
-          <View style={styles.avatarButton}>
-            <CustomText bold fontSize={12} color={Colors.BrandPrimary}>
-              {getInitials("Bu Randevu")}
-            </CustomText>
-          </View>
-        </View>
-
         <View style={styles.revenueCard}>
           <View style={styles.revenueTopRow}>
             <CustomText bold fontSize={12} color={Colors.LightGray2} letterSpacing={1.8}>
@@ -218,13 +171,7 @@ export default function AccountingScreen() {
               const active = index === chartData.tooltipIndex;
               return (
                 <View key={`${mode}-${chartData.labels[index]}`} style={styles.chartColumn}>
-                  <View
-                    style={[
-                      styles.chartBar,
-                      { height: `${height}%` },
-                      active ? styles.chartBarActive : styles.chartBarMuted,
-                    ]}
-                  >
+                  <View style={[styles.chartBar, { height: `${height}%` }, active ? styles.chartBarActive : styles.chartBarMuted]}>
                     {active ? (
                       <View style={styles.chartTooltip}>
                         <CustomText bold fontSize={10} color={Colors.White}>
@@ -242,13 +189,7 @@ export default function AccountingScreen() {
             {chartData.labels.map((label, index) => {
               const active = index === chartData.tooltipIndex;
               return (
-                <CustomText
-                  key={`${mode}-${label}-label`}
-                  bold
-                  fontSize={10}
-                  color={active ? Colors.Gold : "rgba(80,83,89,0.74)"}
-                  style={styles.chartLabel}
-                >
+                <CustomText key={`${mode}-${label}-label`} bold fontSize={10} color={active ? Colors.Gold : "rgba(80,83,89,0.74)"} style={styles.chartLabel}>
                   {label}
                 </CustomText>
               );
@@ -292,13 +233,7 @@ export default function AccountingScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.netIncomeCard, pressed && styles.pressed]}
-          onPress={() =>
-            CommandBus.sc.alertInfo(
-              "Net bakiye",
-              `${mode === "daily" ? "Günlük" : "Aylık"} net bakiye: ${netIncome}`,
-              2800,
-            )
-          }
+          onPress={() => CommandBus.sc.alertInfo("Net bakiye", `${mode === "daily" ? "Günlük" : "Aylık"} net bakiye: ${netIncome}`, 2800)}
         >
           <View style={styles.netIncomeTextWrap}>
             <CustomText bold fontSize={10} color={Colors.LightGray2} letterSpacing={1.3}>
@@ -314,46 +249,16 @@ export default function AccountingScreen() {
           </View>
         </Pressable>
       </ScrollView>
-    </View>
+    </LayoutView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-    backgroundColor: Colors.BrandBackground,
-  },
-  scroll: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 24,
-    gap: 12,
-  },
-  headerIconButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    borderWidth: 1,
-    borderColor: "rgba(20,20,20,0.05)",
-  },
-  headerTitleWrap: {
-    flex: 1,
-    gap: 2,
-  },
-  headerTitle: {
-    letterSpacing: -0.7,
-  },
+  scroll: { flex: 1 },
   avatarButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: Colors.White,

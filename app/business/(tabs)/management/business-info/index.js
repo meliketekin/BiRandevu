@@ -3,12 +3,12 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { openModal, ModalTypeEnum } from "@/components/high-level/modal-renderer";
 import MapView, { Marker } from "react-native-maps";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { router, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import CommandBus from "@/infrastructures/command-bus/command-bus";
+import LayoutView from "@/components/high-level/layout-view";
 import FormInput from "@/components/high-level/custom-input";
 import CustomSelect from "@/components/high-level/custom-select";
 import CustomText from "@/components/high-level/custom-text";
@@ -50,7 +50,6 @@ function createFormSnapshot(form, pendingDeleteIds = []) {
 const INITIAL_FORM = buildFormState();
 
 export default function EditBusinessInfoForm() {
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [form, setForm] = useState(INITIAL_FORM);
   const [isSaving, setIsSaving] = useState(false);
@@ -255,17 +254,13 @@ export default function EditBusinessInfoForm() {
   const handleChangeLocation = () => setLocationModalVisible(true);
 
   return (
-    <View style={[styles.root, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
-        <Pressable style={({ pressed }) => [styles.backButton, pressed && styles.pressed]} onPress={() => handleAttemptLeave()}>
-          <Ionicons name="arrow-back" size={22} color={Colors.BrandPrimary} />
-        </Pressable>
-        <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.headerTitle}>
-          İşletme bilgileri
-        </CustomText>
-        <View style={styles.headerRightSpacer} />
-      </View>
-
+    <LayoutView
+      showBackButton
+      title="İşletme bilgileri"
+      backgroundColor={Colors.BrandBackground}
+      onBackPress={() => handleAttemptLeave()}
+      paddingHorizontal={0}
+    >
       <KeyboardAwareScrollView
         style={styles.scroll}
         contentContainerStyle={{ paddingTop: 14, paddingBottom: 120, paddingHorizontal: 16 }}
@@ -381,25 +376,11 @@ export default function EditBusinessInfoForm() {
       />
 
       <FormBottomBar label="Kaydet" onPress={handleSave} loading={isSaving} />
-    </View>
+    </LayoutView>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: Colors.BrandBackground },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: Colors.BrandBackground,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: "rgba(20,20,20,0.05)",
-  },
-  backButton: { width: 40, height: 40, borderRadius: 20, alignItems: "center", justifyContent: "center" },
-  headerTitle: { letterSpacing: -0.5 },
-  headerRightSpacer: { width: 40, height: 40 },
   scroll: { flex: 1 },
   section: { marginBottom: 28, gap: 12 },
   sectionLabel: { paddingHorizontal: 2 },
