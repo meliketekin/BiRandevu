@@ -12,10 +12,12 @@ import { Colors } from "@/constants/colors";
  * @param {"date"|"time"|"datetime"} mode
  * @param {Date}     value
  * @param {string}   [title]
+ * @param {Date}     [minimumDate]
+ * @param {Date}     [maximumDate]
  * @param {(date: Date) => void} onConfirm
  * @param {() => void} onClose
  */
-export default function DateTimePicker({ visible, mode = "time", value, title, onConfirm, onClose }) {
+export default function DateTimePicker({ visible, mode = "time", value, title, minimumDate, maximumDate, onConfirm, onClose }) {
   const insets = useSafeAreaInsets();
   const translateY = useRef(new Animated.Value(400)).current;
   const safeInitial = value instanceof Date && !isNaN(value) ? value : new Date();
@@ -59,6 +61,8 @@ export default function DateTimePicker({ visible, mode = "time", value, title, o
           date={current}
           mode={mode}
           locale="tr"
+          minimumDate={minimumDate}
+          maximumDate={maximumDate}
           onDateChange={setCurrent}
           style={styles.picker}
         />

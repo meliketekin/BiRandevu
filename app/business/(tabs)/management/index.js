@@ -102,6 +102,7 @@ export default function Management() {
         caption: "Çalışma saatlerini gör ve düzenle",
         icon: "time-outline",
         image: CARD_IMAGES.hours,
+        route: "/business/management/hours",
       },
       {
         key: "accounting",
