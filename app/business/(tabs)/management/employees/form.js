@@ -31,14 +31,20 @@ function dateToTimeString(date) {
 }
 
 const DEFAULT_HOURS = [
-  { key: "pzt", day: "Pazartesi", enabled: true, start: "09:00", end: "18:00" },
-  { key: "sal", day: "Salı", enabled: true, start: "09:00", end: "18:00" },
-  { key: "car", day: "Çarşamba", enabled: true, start: "09:00", end: "18:00" },
-  { key: "per", day: "Perşembe", enabled: true, start: "09:00", end: "18:00" },
-  { key: "cum", day: "Cuma", enabled: true, start: "09:00", end: "18:00" },
-  { key: "cmt", day: "Cumartesi", enabled: true, start: "10:00", end: "17:00" },
-  { key: "paz", day: "Pazar", enabled: false, start: "09:00", end: "18:00" },
+  { dayIndex: 1, day: "Pazartesi", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 2, day: "Salı", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 3, day: "Çarşamba", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 4, day: "Perşembe", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 5, day: "Cuma", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 6, day: "Cumartesi", enabled: true, start: "10:00", end: "17:00" },
+  { dayIndex: 0, day: "Pazar", enabled: false, start: "09:00", end: "18:00" },
 ];
+
+function hoursToMap(hoursArray) {
+  return Object.fromEntries(
+    hoursArray.map(({ dayIndex, enabled, start, end }) => [String(dayIndex), { enabled, start, end }])
+  );
+}
 
 function HourRow({ item, isLast, onToggle, onTimeChange }) {
   const [pickerOpen, setPickerOpen] = useState(null); // "start" | "end" | null
@@ -81,7 +87,7 @@ function HourRow({ item, isLast, onToggle, onTimeChange }) {
         value={timeStringToDate(pickerOpen === "end" ? item.end : item.start)}
         title={pickerOpen === "start" ? "Başlangıç saati" : "Bitiş saati"}
         onConfirm={(date) => {
-          onTimeChange(item.key, pickerOpen, dateToTimeString(date));
+          onTimeChange(item.dayIndex, pickerOpen, dateToTimeString(date));
           setPickerOpen(null);
         }}
         onClose={() => setPickerOpen(null)}
@@ -263,11 +269,8 @@ export default function EmployeeForm() {
         setPhone(data.phone ?? "");
         setPhotoUri(data.photoUrl ?? null);
         setSelectedServices(data.services ?? []);
-        if (data.workingHours?.length) {
-          setHours(DEFAULT_HOURS.map((base) => {
-            const existing = data.workingHours.find((h) => h.key === base.key);
-            return existing ? { ...base, ...existing } : base;
-          }));
+        if (data.workingHours) {
+          setHours(DEFAULT_HOURS.map((base) => ({ ...base, ...(data.workingHours[String(base.dayIndex)] ?? {}) })));
         }
       })
       .catch((err) => console.error("Employee load error:", err))
@@ -375,7 +378,7 @@ export default function EmployeeForm() {
         photoUrl,
         photoPublicId,
         services: selectedServices,
-        workingHours: hours,
+        workingHours: hoursToMap(hours),
       };
 
       if (isEdit) {
@@ -394,12 +397,12 @@ export default function EmployeeForm() {
     }
   }, [name, phone, photoUri, hours, selectedServices, employee, isEdit, employeeId, uploadPhoto]);
 
-  const toggleDay = useCallback((key) => {
-    setHours((prev) => prev.map((item) => (item.key === key ? { ...item, enabled: !item.enabled } : item)));
+  const toggleDay = useCallback((dayIndex) => {
+    setHours((prev) => prev.map((item) => (item.dayIndex === dayIndex ? { ...item, enabled: !item.enabled } : item)));
   }, []);
 
-  const changeTime = useCallback((key, field, value) => {
-    setHours((prev) => prev.map((item) => (item.key === key ? { ...item, [field]: value } : item)));
+  const changeTime = useCallback((dayIndex, field, value) => {
+    setHours((prev) => prev.map((item) => (item.dayIndex === dayIndex ? { ...item, [field]: value } : item)));
   }, []);
 
   if (loadingEmployee) {
@@ -457,7 +460,7 @@ export default function EmployeeForm() {
             </View>
             <View style={styles.cardSection}>
               {hours.map((item, index) => (
-                <HourRow key={item.key} item={item} isLast={index === hours.length - 1} onToggle={() => toggleDay(item.key)} onTimeChange={changeTime} />
+                <HourRow key={item.dayIndex} item={item} isLast={index === hours.length - 1} onToggle={() => toggleDay(item.dayIndex)} onTimeChange={changeTime} />
               ))}
             </View>
           </View>

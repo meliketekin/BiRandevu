@@ -10,6 +10,13 @@ import CustomImage from "@/components/high-level/custom-image";
 import ActivityLoading from "@/components/high-level/activity-loading";
 import { Colors } from "@/constants/colors";
 
+function getEmployeeTodayStatus(emp) {
+  const today = emp.workingHours?.[String(new Date().getDay())];
+  return today?.enabled
+    ? { dotColor: Colors.Green, detail: "Bugün mesaide" }
+    : { dotColor: Colors.ErrorColor, detail: "Bugün izinli" };
+}
+
 export default function Employees() {
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -73,32 +80,36 @@ export default function Employees() {
           </View>
         ) : (
           <View style={styles.list}>
-            {employees.map((emp) => (
-              <Pressable
-                key={emp.id}
-                style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-                onPress={() => router.push({ pathname: "/business/management/employees/[id]", params: { id: emp.id } })}
-              >
-                {emp.photoUrl ? (
-                  <CustomImage uri={emp.photoUrl} style={styles.avatar} contentFit="cover" />
-                ) : (
-                  <View style={styles.avatarPlaceholder}>
-                    <Ionicons name="person-outline" size={18} color="#C0C0C0" />
-                  </View>
-                )}
-                <View style={styles.employeeInfo}>
-                  <CustomText bold color={Colors.BrandPrimary} style={styles.employeeName}>
-                    {emp.name}
-                  </CustomText>
-                  {emp.services?.length > 0 && (
-                    <CustomText medium fontSize={12} color={Colors.LightGray2} numberOfLines={1}>
-                      {emp.services.map((s) => s.name).join(", ")}
-                    </CustomText>
+            {employees.map((emp) => {
+              const todayStatus = getEmployeeTodayStatus(emp);
+              return (
+                <Pressable
+                  key={emp.id}
+                  style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+                  onPress={() => router.push({ pathname: "/business/management/employees/[id]", params: { id: emp.id } })}
+                >
+                  {emp.photoUrl ? (
+                    <CustomImage uri={emp.photoUrl} style={styles.avatar} contentFit="cover" />
+                  ) : (
+                    <View style={styles.avatarPlaceholder}>
+                      <Ionicons name="person-outline" size={18} color="#C0C0C0" />
+                    </View>
                   )}
-                </View>
-                <Ionicons name="chevron-forward" size={18} color={Colors.LightGray2} />
-              </Pressable>
-            ))}
+                  <View style={styles.employeeInfo}>
+                    <CustomText bold color={Colors.BrandPrimary} style={styles.employeeName}>
+                      {emp.name}
+                    </CustomText>
+                    <View style={styles.statusRow}>
+                      <View style={[styles.statusDot, { backgroundColor: todayStatus.dotColor }]} />
+                      <CustomText medium fontSize={12} color={Colors.LightGray2}>
+                        {todayStatus.detail}
+                      </CustomText>
+                    </View>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={Colors.LightGray2} />
+                </Pressable>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -128,7 +139,7 @@ const styles = StyleSheet.create({
     gap: 12,
     backgroundColor: Colors.White,
     borderRadius: 14,
-    paddingVertical: 10,
+    paddingVertical: 12,
     paddingHorizontal: 12,
     borderWidth: 1,
     borderColor: "rgba(196,199,199,0.18)",
@@ -142,7 +153,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  employeeInfo: { flex: 1, gap: 2 },
+  employeeInfo: { flex: 1, justifyContent: "center", gap: 4 },
   employeeName: { letterSpacing: -0.2, fontSize: 15 },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
   pressed: { opacity: 0.86, transform: [{ scale: 0.98 }] },
 });

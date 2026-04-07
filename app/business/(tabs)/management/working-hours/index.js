@@ -70,16 +70,18 @@ function getPickerBounds(start, end, field) {
 }
 
 const DEFAULT_HOURS = [
-  { key: "pzt", day: "Pazartesi", enabled: true, start: "09:00", end: "18:00" },
-  { key: "sal", day: "Salı", enabled: true, start: "09:00", end: "18:00" },
-  { key: "car", day: "Çarşamba", enabled: true, start: "09:00", end: "18:00" },
-  { key: "per", day: "Perşembe", enabled: true, start: "09:00", end: "18:00" },
-  { key: "cum", day: "Cuma", enabled: true, start: "09:00", end: "18:00" },
-  { key: "cmt", day: "Cumartesi", enabled: true, start: "10:00", end: "17:00" },
-  { key: "paz", day: "Pazar", enabled: false, start: "09:00", end: "18:00" },
+  { dayIndex: 1, day: "Pazartesi", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 2, day: "Salı", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 3, day: "Çarşamba", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 4, day: "Perşembe", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 5, day: "Cuma", enabled: true, start: "09:00", end: "18:00" },
+  { dayIndex: 6, day: "Cumartesi", enabled: true, start: "10:00", end: "17:00" },
+  { dayIndex: 0, day: "Pazar", enabled: false, start: "09:00", end: "18:00" },
 ];
 
-const DAY_KEY_BY_WEEKDAY = ["paz", "pzt", "sal", "car", "per", "cum", "cmt"];
+function hoursToMap(hoursArray) {
+  return Object.fromEntries(hoursArray.map(({ dayIndex, enabled, start, end }) => [String(dayIndex), { enabled, start, end }]));
+}
 
 function toDateId(date) {
   const year = date.getFullYear();
@@ -88,21 +90,10 @@ function toDateId(date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatDateLabel(dateId) {
-  const [year, month, day] = dateId.split("-").map(Number);
-  return new Date(year, month - 1, day).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
-}
-
 function getHoursTemplateForDate(dateId, regularHours) {
   const [year, month, day] = dateId.split("-").map(Number);
-  const date = new Date(year, month - 1, day);
-  const dayKey = DAY_KEY_BY_WEEKDAY[date.getDay()];
-  const matchingDay = regularHours.find((item) => item.key === dayKey);
-  return matchingDay ?? DEFAULT_HOURS[0];
+  const dayIndex = new Date(year, month - 1, day).getDay();
+  return regularHours.find((item) => item.dayIndex === dayIndex) ?? DEFAULT_HOURS[0];
 }
 
 function buildSpecialDay(dateId, regularHours) {
@@ -110,7 +101,6 @@ function buildSpecialDay(dateId, regularHours) {
   return {
     id: dateId,
     date: dateId,
-    label: formatDateLabel(dateId),
     name: "",
     enabled: template.enabled,
     start: template.start,
@@ -170,7 +160,7 @@ function HourRow({ item, isLast, onToggle, onTimeChange }) {
         maximumDate={pickerBounds?.maximumDate}
         title={pickerOpen === "start" ? "Başlangıç saati" : "Bitiş saati"}
         onConfirm={(date) => {
-          onTimeChange(item.key, pickerOpen, dateToTimeString(date));
+          onTimeChange(item.dayIndex, pickerOpen, dateToTimeString(date));
           setPickerOpen(null);
         }}
         onClose={() => setPickerOpen(null)}
@@ -192,7 +182,7 @@ function SpecialDayRow({ item, isLast, onToggle, onTimeChange, onRemove }) {
           </View>
           <View style={{ flex: 1 }}>
             <CustomText bold fontSize={15} color={item.enabled ? Colors.BrandPrimary : Colors.LightGray2}>
-              {item.name?.trim() ? `${item.name.trim()} - ${item.label}` : item.label}
+              {item.name?.trim() ? `${item.name.trim()}` : "Özel gün"}
             </CustomText>
             <CustomText medium fontSize={11} color={Colors.LightGray2}>
               Özel gün çalışma saati
@@ -274,13 +264,8 @@ export default function WorkingHours() {
       .then((snap) => {
         if (!snap.exists()) return;
         const data = snap.data();
-        if (data.workingHours?.length) {
-          setHours(
-            DEFAULT_HOURS.map((base) => {
-              const existing = data.workingHours.find((item) => item.key === base.key);
-              return existing ? { ...base, ...existing } : base;
-            }),
-          );
+        if (data.workingHours) {
+          setHours(DEFAULT_HOURS.map((base) => ({ ...base, ...(data.workingHours[String(base.dayIndex)] ?? {}) })));
         }
 
         if (Array.isArray(data.specialWorkingHours)) {
@@ -288,7 +273,6 @@ export default function WorkingHours() {
             .map((item) => ({
               id: item.date,
               date: item.date,
-              label: item.label ?? formatDateLabel(item.date),
               name: item.name ?? "",
               enabled: item.enabled ?? true,
               start: item.start ?? "09:00",
@@ -297,26 +281,13 @@ export default function WorkingHours() {
             .sort((a, b) => a.date.localeCompare(b.date));
           setSpecialDays(loadedSpecialDays);
           initialSnapshotRef.current = createHoursSnapshot(
-            data.workingHours?.length
-              ? DEFAULT_HOURS.map((base) => {
-                  const existing = data.workingHours.find((item) => item.key === base.key);
-                  return existing ? { ...base, ...existing } : base;
-                })
-              : DEFAULT_HOURS,
+            data.workingHours ? DEFAULT_HOURS.map((base) => ({ ...base, ...(data.workingHours[String(base.dayIndex)] ?? {}) })) : DEFAULT_HOURS,
             loadedSpecialDays,
           );
           return;
         }
 
-        initialSnapshotRef.current = createHoursSnapshot(
-          data.workingHours?.length
-            ? DEFAULT_HOURS.map((base) => {
-                const existing = data.workingHours.find((item) => item.key === base.key);
-                return existing ? { ...base, ...existing } : base;
-              })
-            : DEFAULT_HOURS,
-          [],
-        );
+        initialSnapshotRef.current = createHoursSnapshot(data.workingHours ? DEFAULT_HOURS.map((base) => ({ ...base, ...(data.workingHours[String(base.dayIndex)] ?? {}) })) : DEFAULT_HOURS, []);
       })
       .catch((err) => console.error("Business hours load error:", err))
       .finally(() => setLoading(false));
@@ -340,12 +311,12 @@ export default function WorkingHours() {
     };
   }, []);
 
-  const toggleDay = useCallback((key) => {
-    setHours((prev) => prev.map((item) => (item.key === key ? { ...item, enabled: !item.enabled } : item)));
+  const toggleDay = useCallback((dayIndex) => {
+    setHours((prev) => prev.map((item) => (item.dayIndex === dayIndex ? { ...item, enabled: !item.enabled } : item)));
   }, []);
 
-  const changeTime = useCallback((key, field, value) => {
-    setHours((prev) => prev.map((item) => (item.key === key ? { ...item, [field]: value } : item)));
+  const changeTime = useCallback((dayIndex, field, value) => {
+    setHours((prev) => prev.map((item) => (item.dayIndex === dayIndex ? { ...item, [field]: value } : item)));
   }, []);
 
   const toggleSpecialDay = useCallback((id) => {
@@ -361,7 +332,7 @@ export default function WorkingHours() {
       const target = specialDays.find((item) => item.id === id);
       openModal(ModalTypeEnum.ConfirmModal, {
         title: "Özel gün silinsin mi?",
-        message: `"${target?.name?.trim() ? `${target.name.trim()} - ${target.label}` : (target?.label ?? "Bu özel gün")}" kaydı kaldırılacak. Emin misiniz?`,
+        message: `"${target?.name?.trim() ? `${target.name.trim()}` : "Özel gün"}" kaydı kaldırılacak. Emin misiniz?`,
         confirmText: "Sil",
         cancelText: "Vazgeç",
         destructiveConfirm: true,
@@ -462,7 +433,7 @@ export default function WorkingHours() {
 
     const specialInvalid = specialDays.find((item) => item.enabled && validateTimeSelection({ start: item.start, end: item.end, field: "end", nextValue: item.end }));
     if (specialInvalid) {
-      return `"${specialInvalid.name?.trim() ? `${specialInvalid.name.trim()} - ${specialInvalid.label}` : specialInvalid.label}" icin saat araligi gecersiz.`;
+      return `"${specialInvalid.name?.trim() ? `${specialInvalid.name.trim()}` : "Özel gün"}" icin saat araligi gecersiz.`;
     }
 
     return null;
@@ -484,10 +455,9 @@ export default function WorkingHours() {
     setIsSaving(true);
     try {
       await updateDoc(doc(db, "businesses", uid), {
-        workingHours: hours.map(({ key, enabled, start, end }) => ({ key, enabled, start, end })),
+        workingHours: hoursToMap(hours),
         specialWorkingHours: specialDays.map((item) => ({
           date: item.date,
-          label: item.label,
           name: item.name?.trim() ?? "",
           enabled: item.enabled,
           start: item.start,
@@ -539,13 +509,7 @@ export default function WorkingHours() {
   }, [handleAttemptLeave, hasUnsavedChanges, isSaving, navigation]);
 
   return (
-    <LayoutView
-      showBackButton
-      title="Çalışma saatleri"
-      backgroundColor={Colors.BrandBackground}
-      onBackPress={() => handleAttemptLeave()}
-      paddingHorizontal={0}
-    >
+    <LayoutView showBackButton title="Çalışma saatleri" backgroundColor={Colors.BrandBackground} onBackPress={() => handleAttemptLeave()} paddingHorizontal={0}>
       <ScrollView style={styles.scroll} contentContainerStyle={{ paddingTop: 14, paddingBottom: 120, paddingHorizontal: 16 }} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
           <View style={styles.noteCard}>
@@ -566,7 +530,7 @@ export default function WorkingHours() {
 
           <View style={styles.cardSection}>
             {hours.map((item, index) => (
-              <HourRow key={item.key} item={item} isLast={index === hours.length - 1} onToggle={() => toggleDay(item.key)} onTimeChange={changeTime} />
+              <HourRow key={item.dayIndex} item={item} isLast={index === hours.length - 1} onToggle={() => toggleDay(item.dayIndex)} onTimeChange={changeTime} />
             ))}
           </View>
 

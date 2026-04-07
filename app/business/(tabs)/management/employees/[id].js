@@ -12,6 +12,16 @@ import { openModal, ModalTypeEnum } from "@/components/high-level/modal-renderer
 import CommandBus from "@/infrastructures/command-bus/command-bus";
 import { Colors } from "@/constants/colors";
 
+const ORDERED_DAYS = [
+  { dayIndex: 1, day: "Pazartesi" },
+  { dayIndex: 2, day: "Salı" },
+  { dayIndex: 3, day: "Çarşamba" },
+  { dayIndex: 4, day: "Perşembe" },
+  { dayIndex: 5, day: "Cuma" },
+  { dayIndex: 6, day: "Cumartesi" },
+  { dayIndex: 0, day: "Pazar" },
+];
+
 export default function EmployeeDetail() {
   const { id } = useLocalSearchParams();
   const employeeId = Array.isArray(id) ? id[0] : id;
@@ -85,9 +95,6 @@ export default function EmployeeDetail() {
       </LayoutView>
     );
   }
-
-  const activeHours = employee.workingHours?.filter((h) => h.enabled) ?? [];
-  const closedHours = employee.workingHours?.filter((h) => !h.enabled) ?? [];
 
   return (
     <LayoutView
@@ -178,7 +185,7 @@ export default function EmployeeDetail() {
         )}
 
         {/* Çalışma saatleri */}
-        {employee.workingHours?.length > 0 && (
+        {!!employee.workingHours && (
           <View style={styles.section}>
             <View style={styles.sectionTitleRow}>
               <CustomText bold fontSize={10} color={Colors.LightGray2} letterSpacing={1.8} style={styles.sectionLabel}>
@@ -187,21 +194,25 @@ export default function EmployeeDetail() {
               <Ionicons name="time-outline" size={16} color={Colors.LightGray2} />
             </View>
             <View style={styles.sectionCard}>
-              {employee.workingHours.map((item, index) => (
-                <View
-                  key={item.key}
-                  style={[
-                    styles.hoursRow,
-                    index < employee.workingHours.length - 1 && styles.rowDivider,
-                    !item.enabled && styles.hoursRowMuted,
-                  ]}
-                >
-                  <CustomText bold fontSize={14} color={Colors.BrandPrimary}>{item.day}</CustomText>
-                  <CustomText bold fontSize={item.enabled ? 14 : 11} color={item.enabled ? Colors.BrandPrimary : Colors.LightGray2} letterSpacing={item.enabled ? 0 : 1.5}>
-                    {item.enabled ? `${item.start} — ${item.end}` : "KAPALI"}
-                  </CustomText>
-                </View>
-              ))}
+              {ORDERED_DAYS.map(({ dayIndex, day }, index) => {
+                const item = employee.workingHours[String(dayIndex)];
+                if (!item) return null;
+                return (
+                  <View
+                    key={dayIndex}
+                    style={[
+                      styles.hoursRow,
+                      index < ORDERED_DAYS.length - 1 && styles.rowDivider,
+                      !item.enabled && styles.hoursRowMuted,
+                    ]}
+                  >
+                    <CustomText bold fontSize={14} color={Colors.BrandPrimary}>{day}</CustomText>
+                    <CustomText bold fontSize={item.enabled ? 14 : 11} color={item.enabled ? Colors.BrandPrimary : Colors.LightGray2} letterSpacing={item.enabled ? 0 : 1.5}>
+                      {item.enabled ? `${item.start} — ${item.end}` : "KAPALI"}
+                    </CustomText>
+                  </View>
+                );
+              })}
             </View>
           </View>
         )}
