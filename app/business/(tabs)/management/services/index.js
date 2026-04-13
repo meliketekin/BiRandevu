@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from "react";
-import { View, StyleSheet, ScrollView, Pressable } from "react-native";
+import { View, StyleSheet, ScrollView, Pressable, ActivityIndicator } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { collection, deleteDoc, doc, onSnapshot, orderBy, query } from "firebase/firestore";
+import { arrayRemove, arrayUnion, collection, deleteDoc, doc, getDoc, onSnapshot, orderBy, query, updateDoc } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import useAuthStore from "@/store/auth-store";
 import { openModal, ModalTypeEnum } from "@/components/high-level/modal-renderer";
@@ -24,12 +24,51 @@ export default function Services() {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState(null);
+  // Çalışan için: kendi employee dokümanındaki hizmet ID'leri
+  const [myServiceIds, setMyServiceIds] = useState(new Set());
+  const [togglingId, setTogglingId] = useState(null);
 
   const isAdmin = useAuthStore((s) => s.isAdmin);
   const userType = useAuthStore((s) => s.userType);
   const storedBusinessId = useAuthStore((s) => s.businessId);
   const isEmployee = userType === "business" && !isAdmin;
   const bizId = isEmployee ? storedBusinessId : auth.currentUser?.uid;
+  const currentUid = auth.currentUser?.uid;
+
+  // Çalışanın mevcut hizmet listesini yükle
+  useEffect(() => {
+    if (!isEmployee || !bizId || !currentUid) return;
+    getDoc(doc(db, "businesses", bizId, "employees", currentUid))
+      .then((snap) => {
+        if (snap.exists()) {
+          const ids = snap.data().services ?? [];
+          setMyServiceIds(new Set(ids.map((s) => (typeof s === "string" ? s : s.id))));
+        }
+      })
+      .catch((err) => console.error("Employee services load error:", err));
+  }, [isEmployee, bizId, currentUid]);
+
+  const handleToggleMyService = useCallback(async (service) => {
+    if (!bizId || !currentUid) return;
+    const empRef = doc(db, "businesses", bizId, "employees", currentUid);
+    const isAdded = myServiceIds.has(service.id);
+    setTogglingId(service.id);
+    try {
+      await updateDoc(empRef, {
+        services: isAdded ? arrayRemove(service.id) : arrayUnion(service.id),
+      });
+      setMyServiceIds((prev) => {
+        const next = new Set(prev);
+        isAdded ? next.delete(service.id) : next.add(service.id);
+        return next;
+      });
+    } catch (e) {
+      console.error("Toggle service error:", e);
+      CommandBus.sc.alertError("Hata", "Hizmet güncellenemedi.", 2600);
+    } finally {
+      setTogglingId(null);
+    }
+  }, [bizId, currentUid, myServiceIds]);
 
   const confirmDeleteService = useCallback((service) => {
     const label = service.name?.trim() || "Bu hizmet";
@@ -101,7 +140,7 @@ export default function Services() {
           </CustomText>
           <CustomText medium fontSize={13} color={Colors.LightGray2} style={styles.heroDescription}>
             {isEmployee
-              ? "İşletmenin sana atadığı hizmetleri buradan görüntüleyebilirsin."
+              ? "İşletmenin sunduğu hizmetlerden kendi listene ekleyebilir, istemediğini çıkarabilirsin."
               : "Fiyat, süre ve açıklama detaylarını tek ekranda düzenleyip hizmet deneyimini daha modern bir yapıda yönet."}
           </CustomText>
         </View>
@@ -146,7 +185,27 @@ export default function Services() {
                   </View>
                 </View>
 
-                {!isEmployee && (
+                {isEmployee ? (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.toggleButton,
+                      myServiceIds.has(service.id) && styles.toggleButtonActive,
+                      pressed && styles.pressed,
+                    ]}
+                    disabled={togglingId === service.id}
+                    onPress={() => handleToggleMyService(service)}
+                  >
+                    {togglingId === service.id ? (
+                      <ActivityIndicator size="small" color={myServiceIds.has(service.id) ? Colors.White : Colors.BrandPrimary} />
+                    ) : (
+                      <Ionicons
+                        name={myServiceIds.has(service.id) ? "checkmark" : "add"}
+                        size={18}
+                        color={myServiceIds.has(service.id) ? Colors.White : Colors.BrandPrimary}
+                      />
+                    )}
+                  </Pressable>
+                ) : (
                   <View style={styles.cardActions}>
                     <Pressable
                       style={({ pressed }) => [styles.editButton, pressed && styles.pressed]}
@@ -223,6 +282,16 @@ const styles = StyleSheet.create({
   },
   priceChip: { backgroundColor: "rgba(212,175,55,0.12)" },
   cardActions: { flexDirection: "row", alignItems: "center", gap: 4, marginLeft: 8 },
+  toggleButton: {
+    width: 36, height: 36, borderRadius: 18, alignItems: "center", justifyContent: "center",
+    marginLeft: 8,
+    backgroundColor: Colors.White,
+    borderWidth: 1.5, borderColor: "rgba(20,20,20,0.15)",
+  },
+  toggleButtonActive: {
+    backgroundColor: Colors.BrandPrimary,
+    borderColor: Colors.BrandPrimary,
+  },
   editButton: {
     width: 34, height: 34, borderRadius: 17, alignItems: "center", justifyContent: "center",
     backgroundColor: Colors.White,

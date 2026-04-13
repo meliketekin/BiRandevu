@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import CustomText from "@/components/high-level/custom-text";
 import CustomImage from "@/components/high-level/custom-image";
 import { Colors } from "@/constants/colors";
+import useUserType from "@/hooks/use-user-type";
 
 const TERTIARY = "#735C00";
 const TERTIARY_CONTAINER = "#CCA830";
@@ -145,6 +146,7 @@ function StatusBadge({ status }) {
 export default function Appointments() {
   const insets = useSafeAreaInsets();
   const { height: windowH } = useWindowDimensions();
+  const { isEmployee } = useUserType();
   const [selected, setSelected] = useState(null);
   const [periodTab, setPeriodTab] = useState("upcoming");
   const [dateFilter, setDateFilter] = useState("Bugün");
@@ -222,18 +224,20 @@ export default function Appointments() {
             </Pressable>
           ) : null}
 
-          <Pressable style={({ pressed }) => [styles.filterPill, pressed && styles.pressed]} onPress={() => setPickerKind("employee")}>
-            <Ionicons name="id-card-outline" size={18} color={TERTIARY} />
-            <View style={styles.filterPillTextCol}>
-              <CustomText min bold color={Colors.BrandPrimary}>
-                Çalışan
-              </CustomText>
-              <CustomText minx color={PALETTE.muted} numberOfLines={1}>
-                {employeeFilter}
-              </CustomText>
-            </View>
-            <Ionicons name="chevron-down" size={16} color={Colors.LightGray2} />
-          </Pressable>
+          {!isEmployee && (
+            <Pressable style={({ pressed }) => [styles.filterPill, pressed && styles.pressed]} onPress={() => setPickerKind("employee")}>
+              <Ionicons name="id-card-outline" size={18} color={TERTIARY} />
+              <View style={styles.filterPillTextCol}>
+                <CustomText min bold color={Colors.BrandPrimary}>
+                  Çalışan
+                </CustomText>
+                <CustomText minx color={PALETTE.muted} numberOfLines={1}>
+                  {employeeFilter}
+                </CustomText>
+              </View>
+              <Ionicons name="chevron-down" size={16} color={Colors.LightGray2} />
+            </Pressable>
+          )}
 
           <Pressable style={({ pressed }) => [styles.tuneFab, pressed && styles.pressed]} onPress={() => setPickerKind("tune")}>
             <Ionicons name="options-outline" size={22} color={Colors.White} />

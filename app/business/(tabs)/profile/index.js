@@ -12,13 +12,17 @@ import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
 import CommandBus from "@/infrastructures/command-bus/command-bus";
 import general from "@/utils/general";
+import useUserType from "@/hooks/use-user-type";
 
 export default function Profile() {
   const insets = useSafeAreaInsets();
+  const { isEmployee } = useUserType();
   const [userInfo, setUserInfo] = useState(null);
   const [businessInfo, setBusinessInfo] = useState(null);
+  const [employerBusinessInfo, setEmployerBusinessInfo] = useState(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const clearAuth = useAuthStore((s) => s.clearAuth);
+  const storedBusinessId = useAuthStore((s) => s.businessId);
 
   useEffect(() => {
     const uid = auth.currentUser?.uid;
@@ -31,6 +35,18 @@ export default function Profile() {
     });
   }, []);
 
+  useEffect(() => {
+    const uid = auth.currentUser?.uid;
+    if (!uid || !storedBusinessId || storedBusinessId === uid) {
+      setEmployerBusinessInfo(null);
+      return;
+    }
+    getDoc(doc(db, "businesses", storedBusinessId)).then((snap) => {
+      if (snap.exists()) setEmployerBusinessInfo(snap.data());
+      else setEmployerBusinessInfo(null);
+    });
+  }, [storedBusinessId]);
+
   const handleLogout = async () => {
     try {
       await signOut(auth);
@@ -42,6 +58,7 @@ export default function Profile() {
   };
 
   const businessName = businessInfo?.businessName ?? "İşletme";
+  const employerBusinessName = employerBusinessInfo?.businessName ?? "";
   const ownerName = userInfo?.name ?? auth.currentUser?.displayName ?? "İşletme Sahibi";
   const email = userInfo?.email ?? auth.currentUser?.email ?? "";
   const category = businessInfo?.category ?? "";
@@ -50,6 +67,15 @@ export default function Profile() {
   const hasAvatar = typeof rawPhoto === "string" && rawPhoto.trim().length > 0;
   const avatarUri = hasAvatar ? rawPhoto.trim() : null;
   const avatarInitials = general.getInitials(ownerName?.trim() || businessName) || "IS";
+
+  const currentUid = auth.currentUser?.uid;
+  const employeeByBusinessId =
+    !!storedBusinessId && !!currentUid && storedBusinessId !== currentUid;
+  const showAsEmployee = isEmployee || employeeByBusinessId;
+  const heroTitle = showAsEmployee ? ownerName : businessName;
+  const profileBadgeText = (
+    category || (showAsEmployee ? "Çalışan" : "İşletme Profili")
+  ).toUpperCase();
 
   const accountSubtitle = useMemo(() => {
     if (phone) return phone;
@@ -92,14 +118,22 @@ export default function Profile() {
             )}
           </View>
           <CustomText bold fontSize={24} color={Colors.BrandPrimary} style={styles.businessName}>
-            {businessName}
+            {heroTitle}
           </CustomText>
           <CustomText xs bold color="#8C721E" style={styles.ownerBadge}>
-            {(category || "İşletme Profili").toUpperCase()}
+            {profileBadgeText}
           </CustomText>
-          <CustomText sm color={Colors.LightGray2} style={styles.ownerName}>
-            {ownerName}
-          </CustomText>
+          {showAsEmployee ? (
+            !!employerBusinessName && (
+              <CustomText sm color={Colors.LightGray2} style={styles.ownerName}>
+                {employerBusinessName}
+              </CustomText>
+            )
+          ) : (
+            <CustomText sm color={Colors.LightGray2} style={styles.ownerName}>
+              {ownerName}
+            </CustomText>
+          )}
           {!!email && (
             <CustomText sm color="#6B6B6B" style={styles.ownerMeta}>
               {email}

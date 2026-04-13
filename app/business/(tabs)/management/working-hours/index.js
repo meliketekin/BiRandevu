@@ -531,7 +531,9 @@ export default function WorkingHours() {
           <View style={styles.noteCard}>
             <Ionicons name="information-circle-outline" size={18} color={Colors.Gold} />
             <CustomText medium fontSize={12} color={Colors.LightGray2} style={styles.noteText}>
-              {loading ? "Çalışma saatleri yükleniyor..." : "Buradaki saatler işletmenizin genel çalışma düzenini temsil eder."}
+              {isEmployee
+                ? "Buradaki saatler kendi çalışma düzeninizi temsil eder. Özel izin günleri için özel gün ekleyebilirsiniz."
+                : "Buradaki saatler işletmenizin genel çalışma düzenini temsil eder."}
             </CustomText>
           </View>
 

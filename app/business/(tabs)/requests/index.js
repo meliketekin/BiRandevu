@@ -70,13 +70,7 @@ export default function Requests() {
     );
     getDocs(q)
       .then((snap) => {
-        let items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
-        // Çalışan yalnızca kendisine atanan randevuları görür
-        if (isEmployee && currentUid) {
-          items = items.filter((item) =>
-            item.employeeIds && Object.values(item.employeeIds).includes(currentUid)
-          );
-        }
+        const items = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
         setRequests(items);
       })
       .finally(() => setLoading(false));
