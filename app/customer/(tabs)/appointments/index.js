@@ -227,33 +227,70 @@ export default function CustomerRandevular() {
             ) : (
               dayAppointments.map((item) => {
                 const statusCfg = APPOINTMENT_STATUS_CONFIG[item.status] ?? APPOINTMENT_STATUS_CONFIG[AppointmentStatusEnum.Pending];
-                const title = item.serviceNames?.join(" & ") ?? "Randevu";
+                const serviceName = item.serviceNames?.join(" & ") ?? "Randevu";
+                const expertName = [...new Set(Object.values(item.employeeNames ?? {}))].join(", ");
+                const [timeH, timeM] = (item.time ?? "--:--").split(":");
+                const weekdayStr = moment(item.date).format("ddd");
+
                 return (
-                  <Pressable key={item.id} style={({ pressed }) => [styles.appointmentItem, pressed && { opacity: 0.85 }]} onPress={() => setSelectedAppointment(item)}>
-                    <View style={styles.timeBadge}>
-                      <CustomText xs semibold color={PALETTE.white}>
-                        {item.time}
+                  <Pressable
+                    key={item.id}
+                    style={({ pressed }) => [styles.appointmentItem, pressed && styles.appointmentItemPressed]}
+                    onPress={() => setSelectedAppointment(item)}
+                  >
+                    {/* Sol: saat bloğu */}
+                    <View style={styles.timeBlock}>
+                      <CustomText extraBold fontSize={22} color={PALETTE.primary} style={styles.timeHour}>
+                        {timeH}
                       </CustomText>
+                      <CustomText bold fontSize={13} color={PALETTE.primaryGold}>:{timeM}</CustomText>
+                      <CustomText xs color={PALETTE.mutedText} style={styles.timeWeekday}>{weekdayStr}</CustomText>
                     </View>
 
-                    <View style={styles.appointmentContent}>
-                      <View style={styles.appointmentMetaRow}>
-                        <View style={[styles.appointmentDot, { backgroundColor: statusCfg.color }]} />
-                        <CustomText xs semibold color={statusCfg.color}>
-                          {statusCfg.label}
-                        </CustomText>
+                    {/* Dikey ayraç */}
+                    <View style={[styles.verticalDivider, { backgroundColor: `${statusCfg.color}50` }]} />
+
+                    {/* Sağ: içerik */}
+                    <View style={styles.aptContent}>
+                      {/* Durum + fiyat */}
+                      <View style={styles.aptTopRow}>
+                        <View style={[styles.statusBadge, { backgroundColor: `${statusCfg.color}18` }]}>
+                          <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
+                          <CustomText xs semibold color={statusCfg.color}>{statusCfg.label}</CustomText>
+                        </View>
+                        {item.totalPrice != null && (
+                          <CustomText xs bold color={PALETTE.darkGold}>
+                            ₺{Number(item.totalPrice).toLocaleString("tr-TR")}
+                          </CustomText>
+                        )}
                       </View>
-                      <CustomText color={PALETTE.primary} semibold style={styles.appointmentTitle}>
-                        {title}
+
+                      {/* Hizmet adı */}
+                      <CustomText bold color={PALETTE.primary} numberOfLines={1} style={styles.aptServiceName}>
+                        {serviceName}
                       </CustomText>
-                      <CustomText xs color={PALETTE.mutedText}>
-                        Hizmet saati {item.time} olarak planlandı.
-                      </CustomText>
+
+                      {/* Meta: uzman + süre */}
+                      <View style={styles.aptMetaRow}>
+                        {!!expertName && (
+                          <View style={styles.aptMetaItem}>
+                            <Ionicons name="person-outline" size={11} color={PALETTE.mutedText} />
+                            <CustomText xs color={PALETTE.mutedText} numberOfLines={1}>{expertName}</CustomText>
+                          </View>
+                        )}
+                        {!!item.totalDuration && (
+                          <>
+                            {!!expertName && <View style={styles.metaDot} />}
+                            <View style={styles.aptMetaItem}>
+                              <Ionicons name="time-outline" size={11} color={PALETTE.mutedText} />
+                              <CustomText xs color={PALETTE.mutedText}>{item.totalDuration} dk</CustomText>
+                            </View>
+                          </>
+                        )}
+                      </View>
                     </View>
 
-                    <View style={styles.arrowWrap}>
-                      <Ionicons name="chevron-forward" size={18} color={PALETTE.primary} />
-                    </View>
+                    <Ionicons name="chevron-forward" size={15} color="#D1D5DB" style={styles.chevron} />
                   </Pressable>
                 );
               })
@@ -498,48 +535,79 @@ const styles = StyleSheet.create({
   appointmentItem: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 14,
-    borderRadius: 20,
-    backgroundColor: PALETTE.backgroundLight,
-    borderWidth: 1,
-    borderColor: "rgba(20,20,20,0.05)",
-    marginBottom: 12,
-  },
-  timeBadge: {
-    width: 64,
-    height: 64,
     borderRadius: 18,
+    backgroundColor: PALETTE.white,
+    borderWidth: 1,
+    borderColor: PALETTE.softBorder,
+    marginBottom: 10,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  appointmentItemPressed: {
+    opacity: 0.88,
+    borderColor: "rgba(212,175,55,0.3)",
+  },
+  timeBlock: {
+    width: 64,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: PALETTE.primary,
-    marginRight: 14,
+    paddingVertical: 16,
+    backgroundColor: "rgba(212,175,55,0.07)",
+    gap: 1,
+    alignSelf: "stretch",
   },
-  appointmentContent: {
+  timeHour: {
+    lineHeight: 26,
+    letterSpacing: -0.5,
+  },
+  timeWeekday: {
+    marginTop: 5,
+    fontSize: 10,
+    textTransform: "capitalize",
+  },
+  verticalDivider: {
+    width: 2,
+    alignSelf: "stretch",
+  },
+  aptContent: {
     flex: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    gap: 5,
   },
-  appointmentMetaRow: {
+  aptTopRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 6,
+    justifyContent: "space-between",
   },
-  appointmentDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: PALETTE.primaryGold,
-    marginRight: 8,
+  aptServiceName: {
+    fontSize: 15,
+    lineHeight: 20,
   },
-  appointmentTitle: {
-    marginBottom: 4,
-    lineHeight: 22,
-  },
-  arrowWrap: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+  aptMetaRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: PALETTE.white,
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  aptMetaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  metaDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
+    backgroundColor: PALETTE.mutedText,
+    opacity: 0.4,
+  },
+  chevron: {
+    marginRight: 12,
   },
 
   /* Modal */

@@ -80,7 +80,7 @@ export default function Employees() {
                 <Pressable
                   key={emp.id}
                   style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-                  onPress={() => router.push({ pathname: "/business/management/employees/[id]", params: { id: emp.id } })}
+                  onPress={() => router.push(`/business/management/employees/${emp.id}`)}
                 >
                   {emp.photoUrl ? (
                     <CustomImage uri={emp.photoUrl} style={styles.avatar} contentFit="cover" />

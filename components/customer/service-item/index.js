@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "flex-start",
     justifyContent: "space-between",
-    paddingVertical: 18,
+    paddingVertical: 12,
     gap: 16,
   },
   withBorder: {
@@ -62,7 +62,7 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 10,
+    marginTop: 6,
   },
   duration: {
     marginLeft: 6,

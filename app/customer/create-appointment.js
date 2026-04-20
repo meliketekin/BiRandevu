@@ -255,7 +255,6 @@ const CreateAppointment = () => {
     setSaving(true);
     try {
       const dateStr = selectedDate.dateStr;
-
       const customerSnap = await getDoc(doc(db, "users", customerId));
       const customerData = customerSnap.exists() ? customerSnap.data() : {};
       const customerName = customerData.name ?? "";

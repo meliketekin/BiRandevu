@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Modal, Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import CustomModal from "@/components/high-level/custom-modal";
 import DateTimePicker from "@/components/high-level/date-time-picker";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { Ionicons } from "@expo/vector-icons";
@@ -189,52 +190,40 @@ const photoSheetStyles = StyleSheet.create({
 
 function ServicePickerModal({ visible, businessServices, selectedIds, onToggle, onClose }) {
   return (
-    <Modal visible={visible} animationType="slide" transparent presentationStyle="overFullScreen" onRequestClose={onClose}>
-      <Pressable style={styles.modalBackdrop} onPress={onClose} />
-      <View style={styles.modalSheet}>
-        <View style={styles.modalHandle} />
-        <View style={styles.modalHeader}>
-          <CustomText extraBold fontSize={18} color={Colors.BrandPrimary}>
-            Hizmet seç
+    <CustomModal visible={visible} onClose={onClose} title="Hizmet seç" maxHeight="75%">
+      {businessServices.length === 0 ? (
+        <View style={styles.modalEmpty}>
+          <Ionicons name="cut-outline" size={32} color={Colors.LightGray2} />
+          <CustomText medium fontSize={14} color={Colors.LightGray2} style={{ marginTop: 10, textAlign: "center" }}>
+            Henüz işletmeye hizmet eklenmemiş.
           </CustomText>
-          <Pressable onPress={onClose} hitSlop={12}>
-            <Ionicons name="close" size={22} color={Colors.LightGray2} />
-          </Pressable>
         </View>
-        {businessServices.length === 0 ? (
-          <View style={styles.modalEmpty}>
-            <Ionicons name="cut-outline" size={32} color={Colors.LightGray2} />
-            <CustomText medium fontSize={14} color={Colors.LightGray2} style={{ marginTop: 10, textAlign: "center" }}>
-              Henüz işletmeye hizmet eklenmemiş.
-            </CustomText>
-          </View>
-        ) : (
-          <ScrollView style={styles.modalList} contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
-            {businessServices.map((svc) => {
-              const selected = selectedIds.includes(svc.id);
-              return (
-                <Pressable key={svc.id} style={({ pressed }) => [styles.servicePickerItem, selected && styles.servicePickerItemSelected, pressed && styles.pressed]} onPress={() => onToggle(svc)}>
-                  <View style={styles.servicePickerLeft}>
-                    <View style={[styles.serviceIconWrap, selected && styles.serviceIconWrapSelected]}>
-                      <Ionicons name="cut-outline" size={18} color={selected ? Colors.White : Colors.Gold} />
-                    </View>
-                    <View style={styles.serviceInfo}>
-                      <CustomText bold fontSize={14} color={Colors.BrandPrimary}>
-                        {svc.name}
-                      </CustomText>
-                      <CustomText bold fontSize={10} color={Colors.LightGray2} letterSpacing={1}>
-                        {svc.durationMinutes} DK • ₺{Number(svc.price).toLocaleString("tr-TR")}
-                      </CustomText>
-                    </View>
+      ) : (
+        <ScrollView style={styles.modalList} contentContainerStyle={{ paddingBottom: 32 }} showsVerticalScrollIndicator={false}>
+          {businessServices.map((svc) => {
+            const selected = selectedIds.includes(svc.id);
+            return (
+              <Pressable key={svc.id} style={({ pressed }) => [styles.servicePickerItem, selected && styles.servicePickerItemSelected, pressed && styles.pressed]} onPress={() => onToggle(svc)}>
+                <View style={styles.servicePickerLeft}>
+                  <View style={[styles.serviceIconWrap, selected && styles.serviceIconWrapSelected]}>
+                    <Ionicons name="cut-outline" size={18} color={selected ? Colors.White : Colors.Gold} />
                   </View>
-                  <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Ionicons name="checkmark" size={14} color={Colors.White} />}</View>
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        )}
-      </View>
-    </Modal>
+                  <View style={styles.serviceInfo}>
+                    <CustomText bold fontSize={14} color={Colors.BrandPrimary}>
+                      {svc.name}
+                    </CustomText>
+                    <CustomText bold fontSize={10} color={Colors.LightGray2} letterSpacing={1}>
+                      {svc.durationMinutes} DK • ₺{Number(svc.price).toLocaleString("tr-TR")}
+                    </CustomText>
+                  </View>
+                </View>
+                <View style={[styles.checkbox, selected && styles.checkboxSelected]}>{selected && <Ionicons name="checkmark" size={14} color={Colors.White} />}</View>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
+      )}
+    </CustomModal>
   );
 }
 
@@ -821,32 +810,6 @@ const styles = StyleSheet.create({
   },
 
   // Service Picker Modal
-  modalBackdrop: { flex: 1, backgroundColor: "rgba(0,0,0,0.4)" },
-  modalSheet: {
-    backgroundColor: Colors.White,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    maxHeight: "75%",
-    paddingBottom: 16,
-  },
-  modalHandle: {
-    alignSelf: "center",
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#E0E0E0",
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.05)",
-  },
   modalList: { paddingHorizontal: 16, paddingTop: 8 },
   modalEmpty: { alignItems: "center", paddingVertical: 40, paddingHorizontal: 24 },
   servicePickerItem: {

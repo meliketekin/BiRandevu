@@ -1,38 +1,47 @@
 import React, { memo, useEffect } from "react";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Image } from "expo-image";
+import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import CustomText from "@/components/high-level/custom-text";
 import CustomTouchableOpacity from "@/components/high-level/custom-touchable-opacity";
 import { Colors } from "@/constants/colors";
 import { BusinessCategoryEnum, BUSINESS_CATEGORIES } from "@/enums/business-category-enum";
 
-const CATEGORY_ICONS = {
-  [BusinessCategoryEnum.Barber]: "cut-outline",
-  [BusinessCategoryEnum.Hairdresser]: "woman-outline",
-  [BusinessCategoryEnum.BeautySalon]: "sparkles-outline",
-  [BusinessCategoryEnum.NailSalon]: "hand-left-outline",
-  [BusinessCategoryEnum.SpaMassage]: "flower-outline",
-  [BusinessCategoryEnum.TattooPiercing]: "color-filter-outline",
+const CATEGORY_META = {
+  [BusinessCategoryEnum.Barber]: {
+    icon: "cut-outline",
+    label: "Berber",
+    imageUri: "https://images.unsplash.com/photo-1503951914875-452162b0f3f1?w=600&q=80",
+  },
+  [BusinessCategoryEnum.Hairdresser]: {
+    icon: "woman-outline",
+    label: "Kuaför",
+    imageUri: "https://images.unsplash.com/photo-1560066984-138daaa0382b?w=600&q=80",
+  },
+  [BusinessCategoryEnum.BeautySalon]: {
+    icon: "sparkles-outline",
+    label: "Güzellik",
+    imageUri: "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?w=600&q=80",
+  },
+  [BusinessCategoryEnum.NailSalon]: {
+    icon: "hand-left-outline",
+    label: "Tırnak",
+    imageUri: "https://images.unsplash.com/photo-1604654894610-df63bc536371?w=600&q=80",
+  },
+  [BusinessCategoryEnum.SpaMassage]: {
+    icon: "flower-outline",
+    label: "Spa & Masaj",
+    imageUri: "https://images.unsplash.com/photo-1540555700478-4be289fbecef?w=600&q=80",
+  },
+  [BusinessCategoryEnum.TattooPiercing]: {
+    icon: "color-filter-outline",
+    label: "Dövme",
+    imageUri: "https://images.unsplash.com/photo-1568515387631-8b650bbcdb90?w=600&q=80",
+  },
 };
 
-/** Uzak görseller — kart arka planı (expo-image). */
-const CATEGORY_IMAGE_URIS = {
-  [BusinessCategoryEnum.Barber]:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuDZB7aYBPzkO189w6sQttYhW9xxo3DciHXknuxqd5qFjzvVNWI2qPcrZ5FPgWpj5x4Bj_1RFQwiDwQD-1ftp2lN515fwLrczKh83CRopvaczUWJBocG5RAZp2BxCD_PvaOw_rlxqlQL4A44GEyCo-ynTka1US-TrKDDgigOwkQWfPD0VydRZuTJ921Nvsd29RMZh7W0A-nmMD_5Mn7od5P2oOV2eyVDjoCYm5JLGRBsDmSMKxDYagfmiVRTYXwsUSsfa-WnVOD97jY",
-  [BusinessCategoryEnum.Hairdresser]:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuCb6WT0MIRTn9wAcFIdxn67ycXJftjBh1UM-Bdadk0WrFhVKZ4gFRPCq9ZEoC7q0YLPYnOPwd3FxN1wXthzz68Ijt1csG2DBTXeNnIzW7qoIxZ_zqs7FN9KkE3r7FPtgboVmeB0a4ezek-EO5fxXbXNB4-DPbwLnENVbLT9PxdBcloRppbychlxLal3jxP_-oVmcrsDPq5H0yHN5WGJ1YBeqjOY4wbcgiAd0botCRPf0JF_pPqXAYssFKUZo5xotTljGNbgXKHn-HA",
-  [BusinessCategoryEnum.BeautySalon]:
-    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=800&q=80",
-  [BusinessCategoryEnum.NailSalon]:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuChj6rCycgyjautPm9wU-h7Eo960rNVk8V8e5-C-4d43wEvO5Kpb2zOOnQ8phRyx1ovzOOj_IQlMnPirACSqUzzmWA0jsmX4eOwEXsT3uG_z6KYrvWLr_uOz5quDXeZ7OeMkDzaE8c9pyqv-SdJe5hsd68VRfx9up7kS4viFZy1xZcMHhRKw89qesh6ZYJWqoYLjnsKwVImcYTWVR1pSSsG6o0x239ZzTQZxxgvGQ4C5D4PFhUM6wrbBuZiA79EF3134_nPlgQy1B4",
-  [BusinessCategoryEnum.SpaMassage]:
-    "https://lh3.googleusercontent.com/aida-public/AB6AXuACHD6HD5XEstT1oVzOqzl5THscUbYsJqep7Rq3pnOJ-JtkzU8UDPGiqta6fRpyUvTZ6IcI-ff9Clu4qYoXuuIuSGisz4nr26EbKIM8cDE0aUfXcagGn3uO3FWniiIQQQZ1tlLl5a1Y61mXOXMA-R2nWUd_ggMG7AJLGDYJ9oZskjtnAsaePbOrNxvXD6eX1TjaQlNZ8L3bsJVV0UghkxOUMqD8ylCln0iou3KAvfNU9ywH0h4ItHDbcIBg2Qk4bYWhVkRowYBCG1Y",
-  [BusinessCategoryEnum.TattooPiercing]:
-    "https://images.pexels.com/photos/3693268/pexels-photo-3693268.jpeg?auto=compress&cs=tinysrgb&w=800",
-};
-
-const PREFETCH_URIS = Object.values(CATEGORY_IMAGE_URIS);
+const PREFETCH_URIS = Object.values(CATEGORY_META).map((m) => m.imageUri);
 
 const CustomerCategoryGrid = ({ onCategoryPress, onViewAllPress, categoryCounts = {} }) => {
   useEffect(() => {
@@ -41,61 +50,63 @@ const CustomerCategoryGrid = ({ onCategoryPress, onViewAllPress, categoryCounts 
 
   return (
     <View style={styles.section}>
+      {/* Başlık */}
       <View style={styles.headerRow}>
-        <View style={styles.headerTitle}>
-          <CustomText bold lg color={Colors.BrandPrimary}>
-            Kategorilere Göz At
-          </CustomText>
-          <CustomText color={Colors.LightGray} sm style={styles.headerDescription}>
-            Randevu almak için bir kategori seçin
-          </CustomText>
-        </View>
-        <CustomTouchableOpacity activeOpacity={0.8} onPress={onViewAllPress}>
-          <CustomText semibold sm color={Colors.BrandGold}>
-            Tümünü Gör
-          </CustomText>
+        <CustomText style={styles.headerTitle}>Kategoriler</CustomText>
+        <CustomTouchableOpacity activeOpacity={0.75} onPress={onViewAllPress}>
+          <View style={styles.viewAllBtn}>
+            <CustomText style={styles.viewAllText}>Tümünü gör</CustomText>
+            <Ionicons name="arrow-forward" size={12} color="#D4AF37" />
+          </View>
         </CustomTouchableOpacity>
       </View>
 
+      {/* Grid */}
       <View style={styles.grid}>
         {BUSINESS_CATEGORIES.map((categoryId) => {
+          const meta = CATEGORY_META[categoryId] ?? {};
           const count = categoryCounts[categoryId] ?? 0;
-          const icon = CATEGORY_ICONS[categoryId] ?? "ellipse-outline";
-          const imageUri = CATEGORY_IMAGE_URIS[categoryId];
+
           return (
-            <CustomTouchableOpacity
+            <Pressable
               key={categoryId}
-              style={styles.card}
-              activeOpacity={0.9}
+              style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
               onPress={() => onCategoryPress?.(categoryId)}
             >
-              {imageUri ? (
+              {/* Arka plan fotoğrafı */}
+              {meta.imageUri ? (
                 <Image
-                  source={{ uri: imageUri }}
+                  source={{ uri: meta.imageUri }}
                   style={StyleSheet.absoluteFillObject}
                   contentFit="cover"
-                  transition={200}
-                  placeholder={{ color: "#2a2a2a" }}
+                  transition={250}
                   cachePolicy="memory-disk"
                 />
               ) : (
                 <View style={[StyleSheet.absoluteFillObject, styles.imageFallback]} />
               )}
-              <View style={styles.overlay} />
-              <View style={styles.content}>
-                <View style={styles.iconBadge}>
-                  <Ionicons name={icon} size={16} color={Colors.White} />
-                </View>
-                <View>
-                  <CustomText bold color={Colors.White} fontSize={18} lineHeight={22}>
-                    {categoryId}
-                  </CustomText>
-                  <CustomText color="rgba(255,255,255,0.85)" xs style={styles.serviceCount}>
-                    {count} Mekan
-                  </CustomText>
-                </View>
+
+              {/* Gradient overlay */}
+              <LinearGradient
+                colors={["rgba(0,0,0,0.08)", "rgba(0,0,0,0.62)"]}
+                style={StyleSheet.absoluteFillObject}
+              />
+
+              {/* İkon — sağ üst */}
+              <View style={styles.iconBadge}>
+                <Ionicons name={meta.icon ?? "ellipse-outline"} size={15} color="rgba(255,255,255,0.9)" />
               </View>
-            </CustomTouchableOpacity>
+
+              {/* Alt içerik */}
+              <View style={styles.cardBottom}>
+                <CustomText style={styles.cardLabel} numberOfLines={1}>
+                  {meta.label ?? categoryId}
+                </CustomText>
+                {count > 0 && (
+                  <CustomText style={styles.cardCount}>{count} mekan</CustomText>
+                )}
+              </View>
+            </Pressable>
           );
         })}
       </View>
@@ -103,58 +114,93 @@ const CustomerCategoryGrid = ({ onCategoryPress, onViewAllPress, categoryCounts 
   );
 };
 
+export default memo(CustomerCategoryGrid);
+
 const styles = StyleSheet.create({
   section: {
-    marginTop: 8,
+    marginTop: 10,
   },
+
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 16,
+    marginBottom: 14,
   },
   headerTitle: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-    gap: 4,
+    fontSize: 18,
+    fontWeight: "700",
+    color: Colors.BrandPrimary,
+    letterSpacing: -0.3,
   },
+  viewAllBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(212,175,55,0.08)",
+    borderWidth: 1,
+    borderColor: "rgba(212,175,55,0.2)",
+    borderRadius: 999,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  viewAllText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#D4AF37",
+  },
+
   grid: {
     flexDirection: "row",
     flexWrap: "wrap",
-    justifyContent: "space-between",
-    rowGap: 14,
+    gap: 10,
   },
   card: {
-    width: "48%",
-    aspectRatio: 0.8,
-    borderRadius: 22,
+    width: "48.5%",
+    aspectRatio: 1,
+    borderRadius: 14,
     overflow: "hidden",
-    backgroundColor: "#2a2a2a",
-    justifyContent: "flex-end",
+    backgroundColor: "#1a1a1a",
+    justifyContent: "space-between",
+    padding: 12,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.12,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  cardPressed: {
+    opacity: 0.88,
+    transform: [{ scale: 0.977 }],
   },
   imageFallback: {
-    backgroundColor: "#3a3a3a",
+    backgroundColor: "#2a2a2a",
   },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.28)",
-  },
-  content: {
-    paddingHorizontal: 14,
-    paddingBottom: 14,
-  },
+
   iconBadge: {
+    alignSelf: "flex-end",
     width: 32,
     height: 32,
-    borderRadius: 16,
+    borderRadius: 10,
+    backgroundColor: "rgba(255,255,255,0.15)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.22)",
-    marginBottom: 10,
   },
-  serviceCount: {
-    marginTop: 3,
+
+  cardBottom: {
+    gap: 2,
+  },
+  cardLabel: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#FFFFFF",
+    letterSpacing: -0.2,
+  },
+  cardCount: {
+    fontSize: 11,
+    fontWeight: "500",
+    color: "rgba(255,255,255,0.55)",
   },
 });
-
-export default memo(CustomerCategoryGrid);

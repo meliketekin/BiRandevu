@@ -1,11 +1,12 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScrollView, StyleSheet, TextInput, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Image } from "expo-image";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/firebase";
+import { collection, deleteDoc, doc, getDocs, setDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 import LayoutView from "@/components/high-level/layout-view";
 import CustomText from "@/components/high-level/custom-text";
 import CustomTouchableOpacity from "@/components/high-level/custom-touchable-opacity";
@@ -33,29 +34,70 @@ const BusinessList = () => {
   const [selectedCategory, setSelectedCategory] = useState(() => categoryFromRouteParam(categoryParam));
   const [searchVisible, setSearchVisible] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [favoriteIds, setFavoriteIds] = useState(new Set());
 
   useEffect(() => {
-    getDocs(collection(db, "businesses"))
-      .then((snap) => {
+    const uid = auth.currentUser?.uid;
+    const favPromise = uid
+      ? getDocs(collection(db, "users", uid, "favorites")).then((snap) =>
+          new Set(snap.docs.map((d) => d.data().businessId ?? d.id)),
+        )
+      : Promise.resolve(new Set());
+
+    Promise.all([getDocs(collection(db, "businesses")), favPromise])
+      .then(([snap, favSet]) => {
         const docs = snap.docs.map((d) => {
           const data = d.data();
+          const venuePhotos = Array.isArray(data.venuePhotos) ? data.venuePhotos : [];
+          const servicePhotos = Array.isArray(data.servicePhotos) ? data.servicePhotos : [];
+          const photos = [...venuePhotos, ...servicePhotos].filter(Boolean);
           return {
             id: d.id,
             title: data.businessName ?? "",
             category: normalizeBusinessCategory(data.category ?? ""),
             location: data.address ?? "",
-            imageUri: data.venuePhotos?.[0] ?? data.servicePhotos?.[0] ?? null,
+            photos,
+            imageUri: photos[0] ?? null,
+            workingHours: data.workingHours ?? null,
             staffImages: [],
             rating: "4.8",
             reviewCount: 0,
           };
         });
         setBusinesses(docs);
+        setFavoriteIds(favSet);
         const uris = docs.map((d) => d.imageUri).filter(Boolean);
         if (uris.length) Image.prefetch(uris);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const handleToggleFavorite = useCallback(async (item) => {
+    const uid = auth.currentUser?.uid;
+    if (!uid) return;
+    const favRef = doc(db, "users", uid, "favorites", item.id);
+    const isCurrentlyFav = favoriteIds.has(item.id);
+    setFavoriteIds((prev) => {
+      const next = new Set(prev);
+      isCurrentlyFav ? next.delete(item.id) : next.add(item.id);
+      return next;
+    });
+    try {
+      if (isCurrentlyFav) {
+        await deleteDoc(favRef);
+        CommandBus.sc.alertInfo("Favori kaldırıldı", `${item.title} favorilerden kaldırıldı.`, 2000);
+      } else {
+        await setDoc(favRef, { businessId: item.id, savedAt: new Date() });
+        CommandBus.sc.alertSuccess("Favori eklendi", `${item.title} favorilerinize eklendi.`, 2000);
+      }
+    } catch {
+      setFavoriteIds((prev) => {
+        const next = new Set(prev);
+        isCurrentlyFav ? next.add(item.id) : next.delete(item.id);
+        return next;
+      });
+    }
+  }, [favoriteIds]);
 
   useEffect(() => {
     setSelectedCategory(categoryFromRouteParam(categoryParam));
@@ -161,16 +203,14 @@ const BusinessList = () => {
         ) : (
           <View style={styles.list}>
             {filteredBusinesses.map((item) => (
-              <CustomTouchableOpacity
+              <CustomerBusinessCard
                 key={item.id}
-                activeOpacity={0.96}
+                item={item}
+                isFavorite={favoriteIds.has(item.id)}
+                onToggleFavorite={handleToggleFavorite}
                 onPress={() => router.push({ pathname: "/customer/business-detail", params: { id: item.id } })}
-              >
-                <CustomerBusinessCard
-                  item={item}
-                  onBookPress={() => router.push({ pathname: "/customer/business-detail", params: { id: item.id } })}
-                />
-              </CustomTouchableOpacity>
+                onBookPress={() => router.push({ pathname: "/customer/business-detail", params: { id: item.id } })}
+              />
             ))}
           </View>
         )}
@@ -219,7 +259,7 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,g
+    gap: 8,
     paddingVertical: 8,
     paddingHorizontal: 14,
   },

@@ -62,7 +62,7 @@ export default function CustomerAnaSayfa() {
           <Ionicons name="menu" size={26} color={Colors.BrandPrimary} />
         </CustomTouchableOpacity>
         <View style={styles.headerLogoRow}>
-          <CustomImage uri={require("@/assets/logo1.png")} isLocalFile style={styles.headerLogo} contentFit="contain" />
+          <CustomImage uri={require("@/assets/logo.png")} isLocalFile style={styles.headerLogo} contentFit="contain" />
           <CustomText color={Colors.BrandPrimary} semibold lg>
             BuRandevu
           </CustomText>
@@ -75,7 +75,7 @@ export default function CustomerAnaSayfa() {
   return (
     <LayoutView isActiveHeader={false} paddingTop={0} paddingHorizontal={0} customHeader={header}>
       <ScrollView style={styles.scrollView} contentContainerStyle={[styles.container, { paddingBottom: insets.bottom + 89 }]} showsVerticalScrollIndicator={false}>
-        <CustomerHomeCarousel />
+        <CustomerHomeCarousel businessCount={businesses.length} />
         <CustomerCategoryGrid onCategoryPress={handleCategoryPress} onViewAllPress={handleViewAllPress} categoryCounts={categoryCounts} />
         <CustomerPopularNearYou businesses={businesses} loading={loadingBusinesses} onItemPress={handlePopularItemPress} />
       </ScrollView>

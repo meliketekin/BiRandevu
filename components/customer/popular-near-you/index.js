@@ -7,15 +7,25 @@ import CustomTouchableOpacity from "@/components/high-level/custom-touchable-opa
 import SkeletonBox from "@/components/high-level/skeleton-box";
 import { Colors } from "@/constants/colors";
 
+function getOpenStatus(workingHours) {
+  if (!workingHours) return null;
+  const now = new Date();
+  const entry = workingHours[String(now.getDay())];
+  if (!entry?.enabled) return false;
+  const toMins = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  const cur = now.getHours() * 60 + now.getMinutes();
+  return cur >= toMins(entry.start) && cur < toMins(entry.end);
+}
+
 function PopularRowSkeleton() {
   return (
     <View style={styles.card}>
       <SkeletonBox style={styles.skeletonImage} />
       <View style={styles.skeletonContent}>
         <SkeletonBox style={styles.skeletonTitle} />
-        <SkeletonBox style={styles.skeletonSubtitle} />
+        <SkeletonBox style={styles.skeletonMeta} />
+        <SkeletonBox style={styles.skeletonSub} />
       </View>
-      <SkeletonBox style={styles.skeletonChevron} />
     </View>
   );
 }
@@ -41,38 +51,66 @@ const CustomerPopularNearYou = ({ businesses = [], loading = false, onItemPress 
         <View style={styles.list}>
           {businesses.map((item) => {
             const imageUri = item.venuePhotos?.[0] ?? item.servicePhotos?.[0] ?? null;
-            const subtitle = [item.category, item.address].filter(Boolean).join(" • ");
+            const isOpen = getOpenStatus(item.workingHours);
 
             return (
-              <CustomTouchableOpacity key={item.id} style={styles.card} activeOpacity={0.9} onPress={() => onItemPress?.(item.id)}>
+              <CustomTouchableOpacity
+                key={item.id}
+                style={styles.card}
+                activeOpacity={0.88}
+                onPress={() => onItemPress?.(item.id)}
+              >
+                {/* Fotoğraf */}
                 {imageUri ? (
                   <Image
                     source={{ uri: imageUri }}
                     style={styles.image}
                     contentFit="cover"
                     transition={200}
-                    placeholder={{ color: "#F5F5F5" }}
                     cachePolicy="memory-disk"
                   />
                 ) : (
                   <View style={[styles.image, styles.imageFallback]}>
-                    <Ionicons name="business-outline" size={24} color="#C0C0C0" />
+                    <Ionicons name="business-outline" size={26} color="#C8C8C8" />
                   </View>
                 )}
 
+                {/* İçerik */}
                 <View style={styles.content}>
-                  <CustomText bold color={Colors.BrandPrimary} fontSize={16} lineHeight={20}>
-                    {item.businessName || "İşletme"}
-                  </CustomText>
-                  {!!subtitle && (
-                    <CustomText xs color={Colors.LightGray} style={styles.subtitle}>
-                      {subtitle}
+                  {/* İsim + chevron */}
+                  <View style={styles.nameRow}>
+                    <CustomText bold fontSize={15} color={Colors.BrandPrimary} numberOfLines={1} style={styles.name}>
+                      {item.businessName || "İşletme"}
                     </CustomText>
-                  )}
-                </View>
+                    <Ionicons name="chevron-forward" size={15} color="#C8C8C8" />
+                  </View>
 
-                <View style={styles.chevronWrapper}>
-                  <Ionicons name="chevron-forward" size={18} color={Colors.LightGray} />
+                  {/* Kategori + durum */}
+                  <View style={styles.badgeRow}>
+                    {!!item.category && (
+                      <View style={styles.categoryPill}>
+                        <CustomText xs color={Colors.BrandGold} semibold>{item.category}</CustomText>
+                      </View>
+                    )}
+                    {isOpen !== null && (
+                      <View style={styles.statusRow}>
+                        <View style={[styles.statusDot, !isOpen && styles.statusDotClosed]} />
+                        <CustomText xs semibold color={isOpen ? "#16A34A" : "#DC2626"}>
+                          {isOpen ? "Açık" : "Kapalı"}
+                        </CustomText>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Adres */}
+                  {!!item.address && (
+                    <View style={styles.addressRow}>
+                      <Ionicons name="location-outline" size={12} color={Colors.LightGray} />
+                      <CustomText xs color={Colors.LightGray} numberOfLines={1} style={styles.addressText}>
+                        {item.address}
+                      </CustomText>
+                    </View>
+                  )}
                 </View>
               </CustomTouchableOpacity>
             );
@@ -94,28 +132,31 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   list: {
-    gap: 12,
+    gap: 10,
   },
+
+  // Card
   card: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 14,
     padding: 12,
     borderRadius: 18,
     backgroundColor: Colors.White,
     borderWidth: 1,
     borderColor: "#F1F1F1",
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.05,
     shadowRadius: 10,
     elevation: 2,
   },
   image: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    marginRight: 14,
-    backgroundColor: "#F5F5F5",
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    backgroundColor: "#F3F4F6",
+    flexShrink: 0,
   },
   imageFallback: {
     alignItems: "center",
@@ -123,45 +164,76 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+    gap: 5,
   },
-  subtitle: {
-    marginTop: 2,
-  },
-  chevronWrapper: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+  nameRow: {
+    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#F8F8F8",
-    marginLeft: 10,
+    justifyContent: "space-between",
+    gap: 4,
   },
-  // skeleton
+  name: {
+    flex: 1,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  categoryPill: {
+    backgroundColor: "rgba(198,168,124,0.12)",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#22C55E",
+  },
+  statusDotClosed: {
+    backgroundColor: "#EF4444",
+  },
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  addressText: {
+    flex: 1,
+  },
+
+  // Skeleton
   skeletonImage: {
-    width: 64,
-    height: 64,
-    borderRadius: 12,
-    marginRight: 14,
+    width: 72,
+    height: 72,
+    borderRadius: 14,
+    flexShrink: 0,
   },
   skeletonContent: {
     flex: 1,
     gap: 8,
   },
   skeletonTitle: {
-    height: 16,
+    height: 15,
     borderRadius: 6,
-    width: "65%",
+    width: "60%",
   },
-  skeletonSubtitle: {
+  skeletonMeta: {
     height: 12,
     borderRadius: 6,
-    width: "80%",
+    width: "40%",
   },
-  skeletonChevron: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    marginLeft: 10,
+  skeletonSub: {
+    height: 11,
+    borderRadius: 6,
+    width: "75%",
   },
 });
 

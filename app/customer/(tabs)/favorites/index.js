@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, TouchableOpacity, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
 import { Ionicons } from "@expo/vector-icons";
 import { useFocusEffect, useRouter } from "expo-router";
@@ -133,60 +134,65 @@ const Favorites = () => {
           <View style={styles.cardList}>
             {items.map((item) => (
               <Pressable key={item.favDocId} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={() => handleCardPress(item)}>
+
+                {/* Fotoğraf bloğu */}
                 <View style={styles.imageWrapper}>
                   {item.imageUri ? (
                     <Image source={{ uri: item.imageUri }} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={200} />
                   ) : (
-                    <View style={styles.imagePlaceholder}>
-                      <Ionicons name="image-outline" size={32} color={Colors.LightGray2} />
-                    </View>
+                    <LinearGradient colors={["#2C2C3E", "#1A1A2E"]} style={styles.imagePlaceholder}>
+                      <Ionicons name="business-outline" size={36} color="rgba(255,255,255,0.2)" />
+                    </LinearGradient>
                   )}
 
-                  <Pressable onPress={() => handleRemove(item)} disabled={removingId === item.favDocId} style={({ pressed }) => [styles.favoriteButton, pressed && styles.favoriteButtonPressed]}>
-                    <Ionicons name="heart" size={22} color="#8B6B16" />
-                  </Pressable>
+                  {/* Alt gradient */}
+                  <LinearGradient colors={["transparent", "rgba(0,0,0,0.55)"]} style={styles.imageGradient} pointerEvents="none" />
 
+                  {/* Kategori chip — sol alt */}
                   {!!item.categoryLabel && (
                     <View style={styles.categoryChip}>
-                      <CustomText bold min color={Colors.White} style={styles.categoryChipText}>
-                        {item.categoryLabel}
-                      </CustomText>
+                      <CustomText xs semibold color={Colors.White}>{item.categoryLabel}</CustomText>
                     </View>
                   )}
+
+                  {/* Kalp butonu — sağ üst */}
+                  <Pressable
+                    onPress={() => handleRemove(item)}
+                    disabled={removingId === item.favDocId}
+                    style={({ pressed }) => [styles.heartBtn, pressed && { opacity: 0.7 }]}
+                  >
+                    <Ionicons name="heart" size={18} color="#E05252" />
+                  </Pressable>
                 </View>
 
+                {/* İçerik */}
                 <View style={styles.cardContent}>
-                  <View style={styles.cardHeader}>
-                    <CustomText bold lg color={Colors.BrandPrimary} style={styles.cardTitle}>
+                  {/* İsim + puan */}
+                  <View style={styles.cardTopRow}>
+                    <CustomText bold fontSize={16} color={Colors.BrandPrimary} numberOfLines={1} style={styles.cardTitle}>
                       {item.title}
                     </CustomText>
-
                     <View style={styles.ratingRow}>
-                      <Ionicons name="star" size={14} color="#8B6B16" />
-                      <CustomText semibold xs color="#8B6B16" style={styles.ratingValue}>
-                        {item.rating}
-                      </CustomText>
-                      <CustomText sm color={Colors.LightGray} style={styles.reviewText}>
-                        ({item.reviewCount} Değerlendirme)
-                      </CustomText>
+                      <Ionicons name="star" size={13} color={Colors.BrandGold} />
+                      <CustomText xs semibold color={Colors.BrandPrimary}>{item.rating}</CustomText>
+                      <CustomText xs color={Colors.LightGray}>({item.reviewCount})</CustomText>
                     </View>
                   </View>
 
-                  <View style={styles.footerRow}>
+                  {/* Adres + Randevu butonu */}
+                  <View style={styles.cardBottomRow}>
                     {!!item.location && (
                       <View style={styles.locationRow}>
-                        <Ionicons name="location-outline" size={16} color={Colors.LightGray} />
-                        <CustomText sm color={Colors.LightGray} numberOfLines={1} style={styles.locationText}>
+                        <Ionicons name="location-outline" size={13} color={Colors.LightGray} />
+                        <CustomText xs color={Colors.LightGray} numberOfLines={1} style={styles.locationText}>
                           {item.location}
                         </CustomText>
                       </View>
                     )}
-
-                    <TouchableOpacity activeOpacity={0.9} style={styles.bookButton} onPress={() => handleBookPress(item)}>
-                      <CustomText semibold sm color="#4F3E00">
-                        Randevu Al
-                      </CustomText>
-                    </TouchableOpacity>
+                    <Pressable style={({ pressed }) => [styles.bookButton, pressed && { opacity: 0.8 }]} onPress={() => handleBookPress(item)}>
+                      <CustomText xs semibold color={Colors.White}>Randevu Al</CustomText>
+                      <Ionicons name="arrow-forward" size={12} color={Colors.White} />
+                    </Pressable>
                   </View>
                 </View>
               </Pressable>
@@ -240,27 +246,29 @@ const styles = StyleSheet.create({
     maxWidth: 260,
   },
   cardList: {
-    gap: 20,
+    gap: 16,
     paddingBottom: 42,
   },
   card: {
     backgroundColor: Colors.White,
-    borderRadius: 24,
+    borderRadius: 20,
     overflow: "hidden",
     borderWidth: 1,
-    borderColor: "rgba(20,20,20,0.05)",
+    borderColor: "rgba(20,20,20,0.06)",
     shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.12,
-    shadowRadius: 28,
-    elevation: 6,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   cardPressed: {
-    opacity: 0.95,
+    opacity: 0.93,
     transform: [{ scale: 0.99 }],
   },
+
+  // Fotoğraf
   imageWrapper: {
-    height: 252,
+    height: 155,
     position: "relative",
   },
   image: {
@@ -270,83 +278,83 @@ const styles = StyleSheet.create({
   imagePlaceholder: {
     width: "100%",
     height: "100%",
-    backgroundColor: "#F0F0F0",
     alignItems: "center",
     justifyContent: "center",
   },
-  favoriteButton: {
+  imageGradient: {
     position: "absolute",
-    top: 16,
-    right: 16,
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    elevation: 3,
-  },
-  favoriteButtonPressed: {
-    transform: [{ scale: 0.96 }],
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 80,
   },
   categoryChip: {
     position: "absolute",
-    left: 16,
-    bottom: 16,
-    backgroundColor: "rgba(20,20,20,0.82)",
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    bottom: 12,
+    left: 14,
+    backgroundColor: "rgba(198,168,124,0.85)",
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
   },
-  categoryChipText: {
-    letterSpacing: 1.1,
-    textTransform: "uppercase",
+  heartBtn: {
+    position: "absolute",
+    top: 12,
+    right: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: "rgba(255,255,255,0.9)",
+    alignItems: "center",
+    justifyContent: "center",
   },
+
+  // İçerik
   cardContent: {
-    paddingHorizontal: 18,
-    paddingTop: 18,
-    paddingBottom: 20,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 16,
+    gap: 10,
   },
-  cardHeader: {
-    marginBottom: 18,
+  cardTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
   },
   cardTitle: {
-    lineHeight: 26,
+    flex: 1,
+    lineHeight: 21,
   },
   ratingRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    gap: 3,
+    flexShrink: 0,
   },
-  ratingValue: {
-    marginLeft: 4,
-  },
-  reviewText: {
-    marginLeft: 6,
-  },
-  footerRow: {
+  cardBottomRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    gap: 12,
+    gap: 10,
   },
   locationRow: {
     flex: 1,
     flexDirection: "row",
     alignItems: "center",
+    gap: 4,
   },
   locationText: {
     flex: 1,
-    marginLeft: 6,
   },
   bookButton: {
-    backgroundColor: "#D7B24A",
-    borderRadius: 999,
-    paddingHorizontal: 18,
-    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    backgroundColor: Colors.BrandPrimary,
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    flexShrink: 0,
   },
 });

@@ -1,15 +1,17 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
 import { View, StyleSheet, ScrollView, Pressable, Modal, useWindowDimensions, ActivityIndicator } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, query, updateDoc, where } from "firebase/firestore";
 import { db, auth } from "@/firebase";
 import useAuthStore from "@/store/auth-store";
 import LayoutView from "@/components/high-level/layout-view";
 import { Ionicons } from "@expo/vector-icons";
 import CustomText from "@/components/high-level/custom-text";
 import CustomImage from "@/components/high-level/custom-image";
+import CustomModal from "@/components/high-level/custom-modal";
 import { Colors } from "@/constants/colors";
 import { APPOINTMENT_STATUS_CONFIG, AppointmentStatusEnum } from "@/enums/appointment-status-enum";
+import CommandBus from "@/infrastructures/command-bus/command-bus";
 import general from "@/utils/general";
 
 const TERTIARY = "#735C00";
@@ -95,9 +97,30 @@ export default function Appointments() {
   const [employeeFilter, setEmployeeFilter] = useState(null);
   const [sortLabel, setSortLabel] = useState("En yakın saat");
   const [pickerKind, setPickerKind] = useState(null);
+  const [actionLoading, setActionLoading] = useState(null);
 
   const closeSheet = useCallback(() => setSelected(null), []);
   const closePicker = useCallback(() => setPickerKind(null), []);
+
+  const handleAppointmentAction = useCallback(async (newStatus) => {
+    if (!selected) return;
+    setActionLoading(newStatus);
+    try {
+      await updateDoc(doc(db, "appointments", selected.id), { status: newStatus });
+      setAppointments((prev) =>
+        prev.map((a) => a.id === selected.id ? { ...a, status: newStatus } : a)
+      );
+      setSelected((prev) => prev ? { ...prev, status: newStatus } : null);
+      const cfg = APPOINTMENT_STATUS_CONFIG[newStatus];
+      CommandBus.sc.alertSuccess("Güncellendi", `Randevu durumu "${cfg?.label}" olarak işaretlendi.`, 2600);
+      closeSheet();
+    } catch (e) {
+      console.error("Randevu güncellenemedi:", e);
+      CommandBus.sc.alertError("Hata", "İşlem tamamlanamadı. Lütfen tekrar deneyin.", 3000);
+    } finally {
+      setActionLoading(null);
+    }
+  }, [selected, closeSheet]);
 
   useEffect(() => {
     if (!bizId) { setLoading(false); return; }
@@ -254,158 +277,173 @@ export default function Appointments() {
           ) : (
             filteredAppointments.map((item) => {
               const statusCfg = appointmentStatusCfg(item.status);
+              const dateObj = item.date ? new Date(item.date) : null;
+              const dayNum = dateObj ? String(dateObj.getDate()).padStart(2, "0") : "--";
+              const monthStr = dateObj ? dateObj.toLocaleDateString("tr-TR", { month: "short" }) : "";
+              const weekdayStr = dateObj ? dateObj.toLocaleDateString("tr-TR", { weekday: "long" }) : "";
+              const initials = general.getInitials(item.customerName) || "M";
+              const [timeH, timeM] = (item.time ?? "--:--").split(":");
+
               return (
-              <Pressable key={item.id} style={({ pressed }) => [styles.card, pressed && styles.cardPressed]} onPress={() => setSelected(item)}>
-                <View style={styles.cardRow}>
-                  <View style={styles.cardLeft}>
-                    <View style={styles.avatarWrap}>
+                <Pressable
+                  key={item.id}
+                  style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                  onPress={() => setSelected(item)}
+                >
+                  {/* Sol: saat bloğu */}
+                  <View style={styles.timeBlock}>
+                    <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.timeHour}>
+                      {timeH}
+                    </CustomText>
+                    <View style={styles.timeMinRow}>
+                      <CustomText bold fontSize={13} color={TERTIARY_CONTAINER}>:{timeM}</CustomText>
+                    </View>
+                    <CustomText xs color={PALETTE.muted} style={styles.timeWeekday} numberOfLines={1}>
+                      {weekdayStr}
+                    </CustomText>
+                  </View>
+
+                  {/* Dikey ayraç */}
+                  <View style={[styles.verticalDivider, { backgroundColor: `${statusCfg.color}40` }]} />
+
+                  {/* Sağ: içerik */}
+                  <View style={styles.cardContent}>
+                    {/* Durum badge */}
+                    <View style={styles.cardContentTopRow}>
+                      <View style={[styles.statusBadge, { backgroundColor: `${statusCfg.color}18` }]}>
+                        <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
+                        <CustomText xs semibold color={statusCfg.color}>{statusCfg.label}</CustomText>
+                      </View>
+                      <CustomText xs semibold color={PALETTE.muted}>{dayNum} {monthStr}</CustomText>
+                    </View>
+
+                    {/* Müşteri */}
+                    <View style={styles.customerRow}>
                       {item.customerPhotoUrl ? (
                         <CustomImage uri={item.customerPhotoUrl} style={styles.avatar} contentFit="cover" />
                       ) : (
                         <View style={[styles.avatar, styles.avatarPlaceholder]}>
-                          <CustomText sm bold color={Colors.BrandPrimary}>
-                            {general.getInitials(item.customerName) || "M"}
-                          </CustomText>
+                          <CustomText xs bold color={Colors.BrandPrimary}>{initials}</CustomText>
                         </View>
                       )}
-                    </View>
-                    <View style={styles.cardTexts}>
-                      <CustomText bold md color={Colors.BrandPrimary}>
-                        {item.customerName}
-                      </CustomText>
-                      <CustomText xs semibold color={TERTIARY} style={styles.serviceLabel}>
-                        {(item.serviceName ?? "").toUpperCase()}
-                      </CustomText>
-                      {periodTab === "past" && item.date ? (
-                        <CustomText minx color={PALETTE.muted} style={styles.pastMeta}>
-                          {formatCompletedDay(item.date)}
+                      <View style={styles.cardTexts}>
+                        <CustomText bold md color={Colors.BrandPrimary} numberOfLines={1}>
+                          {item.customerName}
                         </CustomText>
-                      ) : null}
+                        <CustomText xs color={PALETTE.muted} numberOfLines={1}>
+                          {item.serviceName}
+                        </CustomText>
+                      </View>
                     </View>
+
+                    {/* Expert */}
+                    {item.expertName && item.expertName !== "—" && (
+                      <View style={styles.expertRow}>
+                        <Ionicons name="person-circle-outline" size={13} color={TERTIARY} />
+                        <CustomText xs color={PALETTE.muted} numberOfLines={1}>
+                          {item.expertName}
+                        </CustomText>
+                      </View>
+                    )}
                   </View>
-                  <View style={styles.cardRight}>
-                    <CustomText bold lg color={Colors.BrandPrimary}>
-                      {item.time}
-                    </CustomText>
-                    <View style={[styles.statusBadge, { backgroundColor: `${statusCfg.color}22` }]}>
-                      <View style={[styles.statusDot, { backgroundColor: statusCfg.color }]} />
-                      <CustomText xs semibold color={statusCfg.color}>
-                        {statusCfg.label}
-                      </CustomText>
-                    </View>
-                  </View>
-                </View>
-              </Pressable>
-            );
+                </Pressable>
+              );
             })
           )}
         </View>
       </ScrollView>
 
-      <Modal visible={!!selected} transparent animationType="slide" statusBarTranslucent onRequestClose={closeSheet}>
-        <View style={[styles.modalRoot, { paddingTop: Math.min(insets.top, 48) }]}>
-          <Pressable style={styles.modalBackdrop} onPress={closeSheet} accessibilityRole="button" />
-          <View
-            style={[
-              styles.sheet,
-              {
-                maxHeight: windowH * 0.88,
-                paddingBottom: Math.max(insets.bottom, 20) + 8,
-              },
-            ]}
-          >
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <View style={styles.sheetHeaderText}>
-                <CustomText bold fontSize={28} color={Colors.BrandPrimary} style={styles.sheetTitle}>
-                  Randevu Detayları
-                </CustomText>
-                <CustomText sm color={Colors.LightGray2} style={styles.sheetSubtitle}>
-                  İşlem detaylarını aşağıdan yönetebilirsiniz.
-                </CustomText>
+      <CustomModal visible={!!selected} onClose={closeSheet} title="Randevu Detayı" maxHeight="88%">
+        {selected ? (
+          <View style={styles.sheetBody}>
+            <View style={styles.detailRows}>
+              <View style={styles.detailRow}>
+                <CustomText sm medium color={Colors.LightGray2}>Durum</CustomText>
+                {(() => {
+                  const sc = appointmentStatusCfg(selected.status);
+                  return (
+                    <View style={[styles.statusBadge, { backgroundColor: `${sc.color}22` }]}>
+                      <View style={[styles.statusDot, { backgroundColor: sc.color }]} />
+                      <CustomText xs semibold color={sc.color}>{sc.label}</CustomText>
+                    </View>
+                  );
+                })()}
               </View>
-              <Pressable style={({ pressed }) => [styles.closeBtn, pressed && styles.pressed]} onPress={closeSheet} hitSlop={12}>
-                <Ionicons name="close" size={22} color={Colors.BrandPrimary} />
-              </Pressable>
+              <View style={styles.detailRow}>
+                <CustomText sm medium color={Colors.LightGray2}>Müşteri</CustomText>
+                <CustomText bold md color={Colors.BrandPrimary}>{selected.customerName}</CustomText>
+              </View>
+              <View style={styles.detailRow}>
+                <CustomText sm medium color={Colors.LightGray2}>Hizmet</CustomText>
+                <CustomText bold md color={Colors.BrandPrimary} style={styles.detailValueRight}>{selected.serviceName}</CustomText>
+              </View>
+              <View style={styles.detailRow}>
+                <CustomText sm medium color={Colors.LightGray2}>Uzman</CustomText>
+                <CustomText bold md color={Colors.BrandPrimary}>{selected.expertName}</CustomText>
+              </View>
+              <View style={styles.detailRow}>
+                <CustomText sm medium color={Colors.LightGray2}>Tarih / Saat</CustomText>
+                <CustomText bold md color={Colors.BrandPrimary}>{selected.date}  {selected.time}</CustomText>
+              </View>
+              <View style={[styles.detailRow, styles.detailRowLast]}>
+                <CustomText sm medium color={Colors.LightGray2}>Ücret</CustomText>
+                <CustomText extraBold fontSize={24} color={TERTIARY}>{selected.formattedPrice}</CustomText>
+              </View>
             </View>
 
-            {selected ? (
-              <>
-                <View style={styles.detailRows}>
-                  <View style={styles.detailRow}>
-                    <CustomText sm medium color={Colors.LightGray2}>
-                      Durum
-                    </CustomText>
-                    {(() => {
-                      const sc = appointmentStatusCfg(selected.status);
-                      return (
-                        <View style={[styles.statusBadge, { backgroundColor: `${sc.color}22` }]}>
-                          <View style={[styles.statusDot, { backgroundColor: sc.color }]} />
-                          <CustomText xs semibold color={sc.color}>
-                            {sc.label}
-                          </CustomText>
-                        </View>
-                      );
-                    })()}
-                  </View>
-                  <View style={styles.detailRow}>
-                    <CustomText sm medium color={Colors.LightGray2}>
-                      Müşteri
-                    </CustomText>
-                    <CustomText bold md color={Colors.BrandPrimary}>
-                      {selected.customerName}
-                    </CustomText>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <CustomText sm medium color={Colors.LightGray2}>
-                      Hizmet
-                    </CustomText>
-                    <CustomText bold md color={Colors.BrandPrimary}>
-                      {selected.serviceName}
-                    </CustomText>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <CustomText sm medium color={Colors.LightGray2}>
-                      Uzman
-                    </CustomText>
-                    <CustomText bold md color={Colors.BrandPrimary}>
-                      {selected.expertName}
-                    </CustomText>
-                  </View>
-                  <View style={[styles.detailRow, styles.detailRowLast]}>
-                    <CustomText sm medium color={Colors.LightGray2}>
-                      Ücret
-                    </CustomText>
-                    <CustomText extraBold fontSize={26} color={TERTIARY}>
-                      {selected.formattedPrice}
-                    </CustomText>
-                  </View>
-                </View>
+            {[AppointmentStatusEnum.Approved, AppointmentStatusEnum.Pending].includes(selected.status) && (
+              <View style={styles.sheetActions}>
+                <Pressable
+                  style={({ pressed }) => [styles.btnCompleted, pressed && styles.pressed, actionLoading === AppointmentStatusEnum.Completed && styles.btnDisabled]}
+                  onPress={() => handleAppointmentAction(AppointmentStatusEnum.Completed)}
+                  disabled={!!actionLoading}
+                >
+                  {actionLoading === AppointmentStatusEnum.Completed ? (
+                    <ActivityIndicator size="small" color={Colors.White} />
+                  ) : (
+                    <>
+                      <Ionicons name="checkmark-circle-outline" size={20} color={Colors.White} />
+                      <CustomText bold md color={Colors.White}>Tamamlandı</CustomText>
+                    </>
+                  )}
+                </Pressable>
 
-                <View style={styles.sheetActions}>
-                  <Pressable style={({ pressed }) => [styles.btnPrimary, pressed && styles.pressed]} onPress={closeSheet}>
-                    <CustomText bold lg color={Colors.White}>
-                      Tamamlandı
-                    </CustomText>
+                <View style={styles.btnRow}>
+                  <Pressable
+                    style={({ pressed }) => [styles.btnNoShow, pressed && styles.pressed, actionLoading === AppointmentStatusEnum.NoShow && styles.btnDisabled]}
+                    onPress={() => handleAppointmentAction(AppointmentStatusEnum.NoShow)}
+                    disabled={!!actionLoading}
+                  >
+                    {actionLoading === AppointmentStatusEnum.NoShow ? (
+                      <ActivityIndicator size="small" color="#92400E" />
+                    ) : (
+                      <>
+                        <Ionicons name="person-remove-outline" size={18} color="#92400E" />
+                        <CustomText semibold md color="#92400E">Gelmedi</CustomText>
+                      </>
+                    )}
                   </Pressable>
-                  <View style={styles.btnRow}>
-                    <Pressable style={({ pressed }) => [styles.btnSecondary, pressed && styles.pressed]} onPress={closeSheet}>
-                      <CustomText semibold md color={Colors.BrandPrimary}>
-                        Gelmedi
-                      </CustomText>
-                    </Pressable>
-                    <Pressable style={({ pressed }) => [styles.btnDanger, pressed && styles.pressed]} onPress={closeSheet}>
-                      <CustomText semibold md color={ON_ERROR_CONTAINER}>
-                        İptal
-                      </CustomText>
-                    </Pressable>
-                  </View>
+
+                  <Pressable
+                    style={({ pressed }) => [styles.btnDanger, pressed && styles.pressed, actionLoading === AppointmentStatusEnum.Cancelled && styles.btnDisabled]}
+                    onPress={() => handleAppointmentAction(AppointmentStatusEnum.Cancelled)}
+                    disabled={!!actionLoading}
+                  >
+                    {actionLoading === AppointmentStatusEnum.Cancelled ? (
+                      <ActivityIndicator size="small" color={ON_ERROR_CONTAINER} />
+                    ) : (
+                      <>
+                        <Ionicons name="close-circle-outline" size={18} color={ON_ERROR_CONTAINER} />
+                        <CustomText semibold md color={ON_ERROR_CONTAINER}>İptal</CustomText>
+                      </>
+                    )}
+                  </Pressable>
                 </View>
-              </>
-            ) : null}
+              </View>
+            )}
           </View>
-        </View>
-      </Modal>
+        ) : null}
+      </CustomModal>
 
       <Modal visible={!!pickerKind} transparent animationType="fade" statusBarTranslucent onRequestClose={closePicker}>
         <View style={styles.pickerModalRoot}>
@@ -637,185 +675,177 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     maxWidth: 280,
   },
-  pastMeta: {
-    marginTop: 2,
-  },
   card: {
     backgroundColor: PALETTE.surface,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: PALETTE.border,
     shadowColor: Colors.Black,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.03,
-    shadowRadius: 20,
+    shadowOpacity: 0.05,
+    shadowRadius: 16,
     elevation: 2,
+    flexDirection: "row",
+    overflow: "hidden",
   },
   cardPressed: {
-    opacity: 0.92,
-    borderColor: "rgba(115, 92, 0, 0.2)",
+    opacity: 0.9,
+    borderColor: "rgba(212,175,55,0.3)",
   },
-  cardRow: {
+
+  // Sol saat bloğu
+  timeBlock: {
+    width: 68,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 18,
+    backgroundColor: "rgba(212,175,55,0.07)",
+    gap: 1,
+  },
+  timeHour: {
+    lineHeight: 26,
+    letterSpacing: -0.5,
+  },
+  timeMinRow: {
+    marginTop: -2,
+  },
+  timeWeekday: {
+    marginTop: 6,
+    textAlign: "center",
+    fontSize: 10,
+    textTransform: "capitalize",
+  },
+  verticalDivider: {
+    width: 2,
+    alignSelf: "stretch",
+  },
+
+  // Sağ içerik
+  cardContent: {
+    flex: 1,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    gap: 8,
+  },
+  cardContentTopRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
   },
-  cardLeft: {
+  customerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 16,
-    flex: 1,
-    minWidth: 0,
-  },
-  avatarWrap: {
-    position: "relative",
+    gap: 10,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "rgba(196, 199, 199, 0.35)",
+    borderColor: "rgba(196,199,199,0.35)",
   },
   avatarPlaceholder: {
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#F2F2F2",
-  },
-  activeDot: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: TERTIARY_CONTAINER,
-    borderWidth: 2,
-    borderColor: Colors.White,
+    backgroundColor: "#F0F0F0",
   },
   cardTexts: {
     flex: 1,
+    gap: 2,
+  },
+  expertRow: {
+    flexDirection: "row",
+    alignItems: "center",
     gap: 4,
-  },
-  serviceLabel: {
-    letterSpacing: 2,
-  },
-  cardRight: {
-    alignItems: "flex-end",
-    gap: 8,
   },
   statusBadge: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
+    gap: 5,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
     borderRadius: 999,
   },
   statusDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
-  },
-  modalRoot: {
-    flex: 1,
-    justifyContent: "flex-end",
-  },
-  modalBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.4)",
-  },
-  sheet: {
-    width: "100%",
-    backgroundColor: PALETTE.surface,
-    borderTopLeftRadius: 36,
-    borderTopRightRadius: 36,
-    paddingHorizontal: 28,
-    paddingTop: 8,
-    shadowColor: Colors.Black,
-    shadowOffset: { width: 0, height: -4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 24,
-    elevation: 16,
-  },
-  sheetHandle: {
-    width: 48,
+    width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: "rgba(196, 199, 199, 0.45)",
-    alignSelf: "center",
-    marginBottom: 24,
   },
-  sheetHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-    marginBottom: 28,
-    gap: 12,
-  },
-  sheetHeaderText: {
-    flex: 1,
-  },
-  sheetTitle: {
-    letterSpacing: -0.4,
-  },
-  sheetSubtitle: {
-    marginTop: 4,
-    lineHeight: 20,
-  },
-  closeBtn: {
-    padding: 10,
-    borderRadius: 999,
-    backgroundColor: SURFACE_HIGH,
+  sheetBody: {
+    paddingHorizontal: 22,
+    paddingBottom: 4,
   },
   detailRows: {
-    marginBottom: 28,
+    marginBottom: 24,
     gap: 0,
+    backgroundColor: PALETTE.surface,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: PALETTE.border,
+    paddingHorizontal: 16,
   },
   detailRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingVertical: 10,
+    paddingVertical: 13,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: "rgba(196, 199, 199, 0.35)",
+    gap: 12,
   },
   detailRowLast: {
     borderBottomWidth: 0,
-    paddingTop: 12,
+  },
+  detailValueRight: {
+    flex: 1,
+    textAlign: "right",
   },
   sheetActions: {
-    gap: 14,
+    gap: 12,
+    paddingBottom: 8,
   },
-  btnPrimary: {
-    backgroundColor: Colors.Black,
-    paddingVertical: 16,
-    borderRadius: 999,
+  btnCompleted: {
+    backgroundColor: Colors.BrandPrimary,
+    paddingVertical: 15,
+    borderRadius: 16,
+    flexDirection: "row",
     alignItems: "center",
-    shadowColor: Colors.Black,
+    justifyContent: "center",
+    gap: 8,
+    shadowColor: Colors.BrandPrimary,
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.2,
     shadowRadius: 12,
     elevation: 4,
   },
   btnRow: {
     flexDirection: "row",
-    gap: 12,
+    gap: 10,
   },
-  btnSecondary: {
+  btnNoShow: {
     flex: 1,
-    backgroundColor: SURFACE_HIGH,
-    paddingVertical: 16,
-    borderRadius: 999,
+    backgroundColor: "#FEF3C7",
+    paddingVertical: 15,
+    borderRadius: 16,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "#FCD34D",
   },
   btnDanger: {
     flex: 1,
     backgroundColor: ERROR_CONTAINER,
-    paddingVertical: 16,
-    borderRadius: 999,
+    paddingVertical: 15,
+    borderRadius: 16,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+  },
+  btnDisabled: {
+    opacity: 0.6,
   },
   pressed: {
     opacity: 0.88,

@@ -123,7 +123,7 @@ export default function EmployeeDetail() {
       rightButton={
         <Pressable
           style={({ pressed }) => [styles.headerButton, pressed && styles.pressed]}
-          onPress={() => router.push({ pathname: "/business/management/employees/form", params: { id: employeeId } })}
+          onPress={() => router.push({ pathname: "/business/management/employees/employee-form", params: { id: employeeId } })}
         >
           <Ionicons name="create-outline" size={20} color={Colors.BrandPrimary} />
         </Pressable>
