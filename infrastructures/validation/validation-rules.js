@@ -30,8 +30,8 @@ const validations = {
   },
 
   isPhone: (value) => {
-    const validationRegexp = /^\d{10}$/;
-    return isEmpty(value) || validationRegexp.test(value);
+    const normalized = (value || "").replace(/\D/g, "");
+    return isEmpty(value) || /^\d{10,11}$/.test(normalized);
   },
   isIdentityNo: (value) => {
     const validationRegexp = /^\d{11}$/;

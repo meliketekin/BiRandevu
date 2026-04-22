@@ -611,7 +611,7 @@ export default function EmployeeForm() {
               onChangeText={setPhone}
               keyboardType="phone-pad"
               required
-              error={validator.registerDestructuring({ name: "phone", value: phone, rules: [{ rule: "required", value: 1 }], validatorScopeKey })}
+              error={validator.registerDestructuring({ name: "phone", value: phone, rules: [{ rule: "required", value: 1 }, { rule: "isPhone", value: 1 }], validatorScopeKey })}
             />
           </View>
 

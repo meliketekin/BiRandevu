@@ -73,7 +73,10 @@ export default function Register() {
     ? validator.registerDestructuring({
         name: "phone",
         value: state.phone,
-        rules: [{ rule: "required", value: 1 }],
+        rules: [
+          { rule: "required", value: 1 },
+          { rule: "isPhone", value: 1 },
+        ],
         validatorScopeKey,
       })
     : null;

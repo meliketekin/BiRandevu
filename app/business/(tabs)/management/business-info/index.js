@@ -275,7 +275,7 @@ export default function EditBusinessInfoForm() {
         {/* Temel bilgiler */}
         <View style={styles.section}>
           <View style={styles.fieldsStack}>
-            <FormInput label="İşletme adı" value={form.businessName} onChangeText={(v) => setField("businessName", v)} style={styles.input} />
+            <FormInput label="İşletme adı" value={form.businessName} onChangeText={(v) => setField("businessName", v)} required style={styles.input} />
             <FormInput label="Açıklama" value={form.description} onChangeText={(v) => setField("description", v)} multiline style={styles.input} />
             <CustomSelect
               label="Kategori"
@@ -290,7 +290,7 @@ export default function EditBusinessInfoForm() {
                 onClear: () => setField("category", ""),
               }}
             />
-            <FormInput label="Telefon numarası" value={form.phone} onChangeText={(v) => setField("phone", v)} keyboardType="phone-pad" style={styles.input} />
+            <FormInput label="Telefon numarası" value={form.phone} onChangeText={(v) => setField("phone", v)} required keyboardType="phone-pad" style={styles.input} />
             <FormInput label="WhatsApp numarası" value={form.whatsappNumber} onChangeText={(v) => setField("whatsappNumber", v)} keyboardType="phone-pad" style={styles.input} />
             <SocialLinksEditor links={form.socialLinks} onChange={(links) => setField("socialLinks", links)} />
           </View>

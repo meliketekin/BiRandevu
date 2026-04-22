@@ -4,6 +4,15 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "@/constants/colors";
 import CustomText from "@/components/high-level/custom-text";
 
+function isValidUrl(url) {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getPlatform(url) {
   if (!url) return { icon: "globe-outline", label: "Website" };
   const lower = url.toLowerCase();
@@ -42,11 +51,17 @@ function LinkCard({ url, onRemove }) {
 
 export default function SocialLinksEditor({ links = [], onChange }) {
   const [inputValue, setInputValue] = useState("");
+  const [urlError, setUrlError] = useState("");
 
   const handleAdd = () => {
     const trimmed = inputValue.trim();
     if (!trimmed) return;
     const withScheme = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
+    if (!isValidUrl(withScheme)) {
+      setUrlError("Geçerli bir URL girin (örn: instagram.com/isletmeniz)");
+      return;
+    }
+    setUrlError("");
     onChange([...links, withScheme]);
     setInputValue("");
   };
@@ -69,11 +84,16 @@ export default function SocialLinksEditor({ links = [], onChange }) {
         </View>
       )}
 
-      <View style={styles.inputRow}>
+      {!!urlError && (
+        <CustomText fontSize={12} color={Colors.ErrorColor} style={styles.urlError}>
+          {urlError}
+        </CustomText>
+      )}
+      <View style={[styles.inputRow, !!urlError && styles.inputRowError]}>
         <TextInput
           style={styles.input}
           value={inputValue}
-          onChangeText={setInputValue}
+          onChangeText={(v) => { setInputValue(v); if (urlError) setUrlError(""); }}
           placeholder="https://instagram.com/isletmeniz"
           placeholderTextColor={Colors.InputPlaceholderColor}
           keyboardType="url"
@@ -140,6 +160,12 @@ const styles = StyleSheet.create({
     paddingLeft: 14,
     paddingRight: 6,
     paddingVertical: 6,
+  },
+  inputRowError: {
+    borderColor: Colors.ErrorColor,
+  },
+  urlError: {
+    marginLeft: 4,
   },
   input: {
     flex: 1,

@@ -10,6 +10,8 @@ import FormInput from "@/components/high-level/custom-input";
 import FormBottomBar from "@/components/high-level/form-bottom-bar";
 import CustomText from "@/components/high-level/custom-text";
 import { Colors } from "@/constants/colors";
+import Validator from "@/infrastructures/validation";
+import useReRender from "@/hooks/use-re-render";
 
 /**
  * Firestore yapısı:
@@ -85,12 +87,14 @@ export default function ServiceForm() {
   const initialPrice = Array.isArray(params.price) ? params.price[0] : (params.price ?? "");
   const initialDuration = Array.isArray(params.duration) ? params.duration[0] : (params.duration ?? "");
 
+  const [validator] = useState(() => new Validator());
+  const reRender = useReRender();
+
   const [serviceName, setServiceName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [price, setPrice] = useState(formatPriceValue(parsePriceValue(initialPrice)));
   const [duration, setDuration] = useState(parseDurationValue(initialDuration));
   const [isSaving, setIsSaving] = useState(false);
-  const [errors, setErrors] = useState({});
 
   const updatePrice = (value) => {
     setPrice(formatPriceValue(parsePriceValue(value)));
@@ -100,16 +104,9 @@ export default function ServiceForm() {
     setDuration((prev) => Math.max(5, prev + step));
   };
 
-  const validate = () => {
-    const next = {};
-    if (!serviceName.trim()) next.name = "Hizmet adı zorunludur.";
-    if (!parsePriceValue(price)) next.price = "Fiyat zorunludur.";
-    setErrors(next);
-    return Object.keys(next).length === 0;
-  };
-
   const handleSave = async () => {
-    if (!validate()) return;
+    reRender();
+    if (!validator.allValid()) return;
 
     const uid = auth.currentUser?.uid;
     if (!uid) {
@@ -176,7 +173,13 @@ export default function ServiceForm() {
           <View style={styles.section}>
             <SectionHeader icon="document-text-outline" title="Hizmet Detayları" subtitle="Temel bilgileri eksiksiz doldur." />
 
-            <FormInput label="Hizmet Adı" value={serviceName} onChangeText={(v) => { setServiceName(v); setErrors((e) => ({ ...e, name: null })); }} error={errors.name} />
+            <FormInput
+              label="Hizmet Adı"
+              value={serviceName}
+              onChangeText={setServiceName}
+              required
+              error={validator.registerDestructuring({ name: "serviceName", value: serviceName, rules: [{ rule: "required", value: 1 }], validatorScopeKey: validator.scopeKey })}
+            />
 
             <FormInput
               label="Açıklama"
@@ -208,7 +211,14 @@ export default function ServiceForm() {
                 </View>
               </View>
 
-              <FormInput label="Fiyat" value={price} onChangeText={(v) => { updatePrice(v); setErrors((e) => ({ ...e, price: null })); }} keyboardType="numeric" error={errors.price} />
+              <FormInput
+                label="Fiyat"
+                value={price}
+                onChangeText={updatePrice}
+                required
+                keyboardType="numeric"
+                error={validator.registerDestructuring({ name: "price", value: parsePriceValue(price), rules: [{ rule: "required", value: 1 }], validatorScopeKey: validator.scopeKey })}
+              />
             </View>
           </View>
 

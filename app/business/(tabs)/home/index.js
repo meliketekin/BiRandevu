@@ -156,23 +156,21 @@ export default function Home() {
 
   return (
     <View style={styles.root}>
-      <View style={[styles.header, { paddingTop: insets.top + 12, paddingHorizontal: 16 }]}>
-        <View style={styles.headerLeft}>
-          <Pressable style={({ pressed }) => [styles.iconButton, pressed && styles.pressed]}>
-            <Ionicons name="grid-outline" size={22} color={Colors.LightGray2} />
-          </Pressable>
-          <View>
-            <CustomText extraBold fontSize={22} color={Colors.BrandPrimary} style={styles.brandText}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerInner}>
+          <View style={styles.headerText}>
+            <CustomText fontSize={13} color={Colors.LightGray2} semibold>
+              Hoş geldin 👋
+            </CustomText>
+            <CustomText extraBold fontSize={24} color={Colors.BrandPrimary} style={styles.brandText} numberOfLines={1}>
               {businessName}
             </CustomText>
           </View>
-        </View>
 
-        <Pressable style={({ pressed }) => [styles.avatarWrap, pressed && styles.pressed]} onPress={() => router.push("/business/profil")}>
-          <CustomText xs bold color={Colors.BrandPrimary}>
-            {general.getInitials(ownerName?.trim() || businessName) || "IS"}
-          </CustomText>
-        </Pressable>
+          <Pressable style={({ pressed }) => [styles.notifButton, pressed && styles.pressed]}>
+            <Ionicons name="notifications-outline" size={22} color={Colors.BrandPrimary} />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView
@@ -363,41 +361,40 @@ const styles = StyleSheet.create({
     gap: 20,
   },
   header: {
+    backgroundColor: Colors.BrandBackground,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: "rgba(20,20,20,0.07)",
+  },
+  headerInner: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: Colors.BrandBackground,
-    paddingBottom: 12,
-    zIndex: 10,
-  },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
     gap: 12,
+  },
+  headerText: {
     flex: 1,
+    gap: 1,
   },
   brandText: {
-    letterSpacing: -0.6,
+    letterSpacing: -0.8,
+    lineHeight: 30,
   },
-  iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+  notifButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.8)",
+    backgroundColor: Colors.White,
     borderWidth: 1,
-    borderColor: "rgba(20,20,20,0.05)",
-  },
-  avatarWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(212,175,55,0.12)",
-    borderWidth: 2,
-    borderColor: "rgba(212,175,55,0.2)",
+    borderColor: "rgba(20,20,20,0.07)",
+    shadowColor: Colors.Black,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
   },
   quickActionsList: {
     gap: 12,
