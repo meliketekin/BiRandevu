@@ -19,3 +19,7 @@ export const CloudinaryConfig = {
   UPLOAD_PRESET: "cs3p6enw",
   SUPABASE_CLEANUP_URL: "https://wbqtijlzrgipfadgwpwe.supabase.co/functions/v1/cleanup-cloudinary",
 };
+
+export const SupabaseConfig = {
+  SEND_PASSWORD_RESET_URL: "https://wbqtijlzrgipfadgwpwe.supabase.co/functions/v1/send-password-reset",
+};

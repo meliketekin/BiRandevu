@@ -117,7 +117,7 @@ export default function CustomerLayout() {
             name="appointments"
             options={{
               title: "Randevularım",
-              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Randevularım</Text> : null),
+              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]} adjustsFontSizeToFit numberOfLines={1}>Randevularım</Text> : null),
               tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.appointments.active : TAB_ICONS.appointments.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
             }}
           />
@@ -135,7 +135,7 @@ export default function CustomerLayout() {
             name="favorites"
             options={{
               title: "Favoriler",
-              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]}>Favorilerim</Text> : null),
+              tabBarLabel: ({ focused, color }) => (focused ? <Text style={[styles.tabBarLabel, { color }]} adjustsFontSizeToFit numberOfLines={1}>Favorilerim</Text> : null),
               tabBarIcon: ({ color, focused, size }) => <Ionicons name={focused ? TAB_ICONS.favorites.active : TAB_ICONS.favorites.inactive} size={size ?? TAB_ICON_SIZE} color={color} />,
             }}
           />

@@ -25,7 +25,6 @@ export default function CustomerAnaSayfa() {
   const [loadingBusinesses, setLoadingBusinesses] = useState(true);
 
   useEffect(() => {
-    console.log("getBusinesses");
     getDocs(collection(db, "businesses"))
       .then((snap) => {
         const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() }));

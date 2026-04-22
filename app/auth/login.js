@@ -176,7 +176,7 @@ export default function Login() {
               </View>
 
               {/* Forgot password */}
-              <Pressable style={styles.forgotRow} onPress={() => {}} hitSlop={8}>
+              <Pressable style={styles.forgotRow} onPress={() => router.push("/auth/forgot-password")} hitSlop={8}>
                 <CustomText sm color={Colors.Gold} semibold>
                   Şifremi Unuttum?
                 </CustomText>
